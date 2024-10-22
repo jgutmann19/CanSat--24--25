@@ -12,7 +12,8 @@
  *
  * Distributed as-is; no warranty is given.
  ***************************************************************/
-#include "ICM_20948.h" // Click here to get the library: http://librarymanager/All#SparkFun_ICM_20948_IMU
+#include <ICM_20948.h> // Click here to get the library: http://librarymanager/All#
+#include <Arduino.h>
 
 //#define USE_SPI       // Uncomment this to use SPI
 

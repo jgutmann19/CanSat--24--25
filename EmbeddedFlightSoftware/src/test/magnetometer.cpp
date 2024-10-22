@@ -2,7 +2,8 @@
 
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
-#include <Adafruit_MMC5603.h>
+#include <Adafruit_MMC56x3.h>
+#include <Arduino.h>
 
 // Create an instance of the MMC5603 magnetometer
 Adafruit_MMC5603 mag = Adafruit_MMC5603();

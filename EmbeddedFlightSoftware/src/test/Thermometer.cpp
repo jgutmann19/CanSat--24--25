@@ -1,6 +1,8 @@
 // HiLetgo PCT2075 Temperature Sensor
 
 #include <Wire.h>
+#include <Arduino.h>
+
 //need to include ^wire.h file. doesn't give errors without it??
 #define PCT2075_ADDRESS 0x48  // Default I2C address for PCT2075
 

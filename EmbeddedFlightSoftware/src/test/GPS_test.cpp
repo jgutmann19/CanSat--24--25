@@ -1,4 +1,5 @@
-#include "SparkFun_I2C_GPS_Arduino_Library.h"
+#include <SparkFun_I2C_GPS_Arduino_Library.h>
+#include <Arduino.h>
 I2CGPS myI2CGPS; //Hook object to the library
 
 void setup()

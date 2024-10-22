@@ -2,7 +2,8 @@
 // (c) Michael Schoeffler 2017, http://www.mschoeffler.de
 // https://mschoeffler.com/2017/10/05/tutorial-how-to-use-the-gy-521-module-mpu-6050-breakout-board-with-the-arduino-uno/
 
-#include "Wire.h" // This library allows you to communicate with I2C devices.
+#include <Wire.h> // This library allows you to communicate with I2C devices.
+#include <Arduino.h>
 
 const int MPU_ADDR = 0x68; // I2C address of the MPU-6050. If AD0 pin is set to HIGH, the I2C address will be 0x69.
 

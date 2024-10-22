@@ -1,4 +1,5 @@
 // GY-291 ADXL345 Digital 3-Axis Acceleration of Gravity Tilt Module IIC/SPI
+#include <Arduino.h>
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_ADXL345_U.h>

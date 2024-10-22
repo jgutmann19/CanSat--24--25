@@ -8,6 +8,7 @@
 
 // Include the AccelStepper Library
 #include <AccelStepper.h>
+#include <Arduino.h>
 
 // define step constant
 #define FULLSTEP 4
