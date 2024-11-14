@@ -1,5 +1,4 @@
 import tkinter as tk
-from tkinter import ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 import random
@@ -8,140 +7,143 @@ import time
 # Colors and Fonts for Blue and Orange Theme
 PRIMARY_COLOR = '#0055A5'   # Blue
 TEXT_COLOR = '#FFA500'      # Orange
-FONT_TITLE = ("Verdana", 14, "bold")
-FONT_BUTTON = ("Verdana", 12, "bold")
-FONT_MAIN = ("Verdana", 12)
+FONT_TITLE = ("Verdana", 12, "bold")
 
-# Dropdown options
-dropdown_options = ["Option 1", "Option 2", "Option 3"]
+sim_command = 0
 
-# Sample Data for Graphs
+# Sample Data for Graphs with specified names
+x_values = [1, 2, 3, 4, 5, 6, 7, 8]  # 8 x-values
 graphs_data = {
-    "Graph 1": ([1, 2, 3, 4, 5], [1, 4, 9, 16, 25]),
-    "Graph 2": ([1, 2, 3, 4, 5], [2, 3, 5, 7, 11]),
-    "Graph 3": ([1, 2, 3, 4, 5], [1, 2, 3, 4, 5]),
-    "Graph 4": ([1, 2, 3, 4, 5], [5, 10, 15, 20, 25]),
-    "Graph 5": ([1, 2, 3, 4, 5], [5, 25, 125, 625, 3125]),
-    "Graph 6": ([1, 2, 3, 4, 5], [25, 20, 15, 10, 5]),
-    "Graph 7": ([1, 2, 3, 4, 5], [9, 16, 25, 36, 49]),
-    "Graph 8": ([1, 2, 3, 4, 5], [8, 16, 24, 32, 40]),
-    "Graph 9": ([1, 2, 3, 4, 5], [7, 14, 21, 28, 35]),
-    "Graph 10": ([1, 2, 3, 4, 5], [12, 24, 36, 48, 60]),
-    "Graph 11": ([1, 2, 3, 4, 5], [11, 22, 33, 44, 55]),
-    "Graph 12": ([1, 2, 3, 4, 5], [6, 12, 18, 24, 30])
+    "Altitude": (x_values, [random.randint(0, 100) for _ in range(8)]),
+    "Temperature": (x_values, [random.randint(-20, 40) for _ in range(8)]),
+    "Pressure": (x_values, [random.randint(900, 1100) for _ in range(8)]),
+    "Voltage": (x_values, [random.uniform(0, 5) for _ in range(8)]),
+    "Gyro_R": (x_values, [random.uniform(-180, 180) for _ in range(8)]),
+    "Gyro_P": (x_values, [random.uniform(-180, 180) for _ in range(8)]),
+    "Gyro_Y": (x_values, [random.uniform(-180, 180) for _ in range(8)]),
+    "Accel_R": (x_values, [random.uniform(-10, 10) for _ in range(8)]),
+    "Accel_P": (x_values, [random.uniform(-10, 10) for _ in range(8)]),
+    "Accel_Y": (x_values, [random.uniform(-10, 10) for _ in range(8)]),
+    "Mag_R": (x_values, [random.uniform(-100, 100) for _ in range(8)]),
+    "Mag_P": (x_values, [random.uniform(-100, 100) for _ in range(8)]),
+    "Mag_Y": (x_values, [random.uniform(-100, 100) for _ in range(8)]),
+    "Auto_Gyro_Rotation_Rate": (x_values, [random.uniform(-360, 360) for _ in range(8)])
 }
 
 # Function to generate random data for graphs
 def generate_random_data():
     for key in graphs_data:
-        x_values = graphs_data[key][0]
-        y_values = [random.randint(1, 100) for _ in x_values]
+        y_values = [random.randint(0, 100) if "Temperature" not in key else random.randint(-20, 40) for _ in range(8)]
         graphs_data[key] = (x_values, y_values)
 
 # Function to plot all graphs with dynamic data
-def plot_all_graphs():
-    fig, axs = plt.subplots(3, 4, figsize=(14, 8), dpi=100)
-    fig.suptitle('12 Graphs - Blue & Orange Theme', fontsize=18, color='blue', weight='bold', fontname='Verdana')
-
-    # Plot each graph in the grid with updated random data
+def plot_all_graphs(fig, axs):
     for idx, (graph_title, (x, y)) in enumerate(graphs_data.items()):
-        row = idx // 4
+        row = idx // 4  # Change to 4 columns
         col = idx % 4
         ax = axs[row, col]
         ax.clear()
 
         # Styling the plots
         ax.plot(x, y, marker='o', color='blue', label='X vs Y', linewidth=2.0)
-        ax.fill_between(x, y, color='orange', alpha=0.2)
+
+        # Highlight area under the curve
+        if graph_title == "Temperature":
+            ax.fill_between(x, y, -20, color='orange', alpha=0.2)  # Fill from -20 to the y-value
+        else:
+            ax.fill_between(x, y, color='orange', alpha=0.2)  # Fill from 0 to the y-value
 
         # Adding title and grid
-        ax.set_title(graph_title, fontsize=12, weight='bold', color='darkblue', fontname='Verdana')
-        ax.set_xlabel('X Axis', fontsize=10, fontname='Verdana')
-        ax.set_ylabel('Y Axis', fontsize=10, fontname='Verdana')
+        ax.set_title(graph_title, fontsize=10, weight='bold', color='darkblue', fontname='Verdana')
+        ax.set_xlabel('X Axis', fontsize=8, fontname='Verdana')
+        ax.set_ylabel('Y Axis', fontsize=8, fontname='Verdana')
 
         # Add gridlines
         ax.grid(True, linestyle='--', alpha=0.6)
 
         # Add legend
-        ax.legend(loc='upper left', fontsize=8)
+        ax.legend(loc='upper left', fontsize=7)
 
     # Adjust layout to prevent overlap
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-
-    return fig
+    canvas.draw()  # Redraw the canvas
 
 # Function to update the mission time dynamically
 def update_mission_time():
-    current_time = time.strftime("%H:%M:%S")
+    current_time = time.strftime("Mission Time: %H:%M:%S")
     mission_time_label.config(text=current_time)
-    root.after(1000, update_mission_time)  # Update every 1 second
+    root.after(10, update_mission_time)  # Update every 1 second
 
 # Function to refresh the graphs with new data every second (1 Hz)
 def update_graphs():
     generate_random_data()  # Generate new random data
-    fig = plot_all_graphs()  # Plot the new data
-
-    # Clear previous canvas and update with new figure
-    for widget in frame.winfo_children():
-        widget.destroy()
-
-    canvas = FigureCanvasTkAgg(fig, master=frame)
-    canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-    canvas.draw()
+    plot_all_graphs(fig, axs)  # Update the existing figure and axes
 
     # Schedule the next update in 1 second (1 Hz)
     root.after(1000, update_graphs)
 
+def simulation_mode():
+    # Read CSV then print every 7 values for all graphs
+    sim = 0
+
+# Function to send command
+def send_command():
+    command = cmd_entry.get()
+    global CMD_ECHO  # Use global variable to update CMD_ECHO
+    CMD_ECHO = command  # Update CMD_ECHO with the command
+    cmd_echo_label.config(text=f"CMD_ECHO: {CMD_ECHO}")  # Update the label
+    if(command == "SIM ENABLE"): sim_command = 1
+    if(sim_command == 1 and command == "SIM_ACTIVATE"): simulation_mode()
+    print(f"Command sent: {command}")  # Placeholder for actual command sending logic
+    cmd_entry.delete(0, tk.END)  # Clear the command entry field
+
 # Create the main window
 root = tk.Tk()
-root.title("12 Graph Plotter - Blue & Orange Theme")
+root.title("14 Graph Plotter - Blue & Orange Theme")
+root.geometry("1000x700")  # Set a fixed window size
 root.configure(bg=PRIMARY_COLOR)
 
-# Layout elements for the header and controls
-team_id_label = tk.Label(
-    root, text="Team ID: 1234", font=FONT_TITLE, 
-    bg=PRIMARY_COLOR, fg=TEXT_COLOR
-)
-team_id_label.grid(row=0, column=0, sticky='w', padx=10, pady=10)
+# Variable to store the command echo
+CMD_ECHO = ""
 
-mission_time_label = tk.Label(
-    root, text="--:--:--", font=FONT_TITLE, 
-    bg=PRIMARY_COLOR, fg=TEXT_COLOR
-)
-mission_time_label.grid(row=0, column=1, sticky='w', padx=10, pady=10)
+# Create static values
+static_values = {
+    "TEAM_ID": "1234",
+    "PACKET_COUNT": "0",
+    "MODE": "IDLE",
+    "STATE": "OK",
+    "GPS_ALTITUDE": "N/A",
+    "GPS_LATITUDE": "N/A",
+    "GPS_LONGITUDE": "N/A",
+    "GPS_SATS": "0",
+}
 
-sim_mode_button = tk.Button(
-    root, text="Simulation Mode", font=FONT_BUTTON, 
-    bg=PRIMARY_COLOR, fg=TEXT_COLOR, bd=0
-)
-sim_mode_button.grid(row=0, column=2, padx=10, pady=10)
+# Layout for static values
+for idx, (label, value) in enumerate(static_values.items()):
+    tk.Label(root, text=f"{label}: {value}", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR).grid(row=0, column=idx, padx=5, pady=5)
 
-close_button = tk.Button(
-    root, text="Close", font=FONT_BUTTON, bg=PRIMARY_COLOR, 
-    fg=TEXT_COLOR, bd=0, command=root.quit
-)
-close_button.grid(row=0, column=3, padx=10, pady=10)
+# Create a label for command echo
+cmd_echo_label = tk.Label(root, text=f"CMD_ECHO: {CMD_ECHO}", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR)
+cmd_echo_label.grid(row=2, column=3, padx=5, pady=5)
 
-input_label = tk.Label(
-    root, text="Input", font=(FONT_MAIN, 20), 
-    bg=PRIMARY_COLOR, fg=TEXT_COLOR
-)
-input_label.grid(row=2, column=0, padx=10, pady=10)
+# Create a figure and axes for the plots
+fig, axs = plt.subplots(4, 4, figsize=(15, 10), dpi=100)  # 16 graphs in a 4x4 grid
+canvas = FigureCanvasTkAgg(fig, master=root)  # Create a canvas to hold the figure
+canvas.get_tk_widget().grid(row=1, column=0, columnspan=9, padx=10, pady=10, sticky="nsew")
 
-dropdown = ttk.Combobox(
-    root, values=dropdown_options, font=(FONT_MAIN, 20), width=20
-)
-dropdown.grid(row=2, column=1, padx=10, pady=10)
+# Create CMD entry and send button
+cmd_label = tk.Label(root, text="CMD:", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR)
+cmd_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
 
-send_button = tk.Button(
-    root, text="Send", font=FONT_BUTTON, width=10, bg=PRIMARY_COLOR, 
-    fg=TEXT_COLOR, command=lambda: print("Data Sent!")
-)
-send_button.grid(row=2, column=2, padx=10, pady=10)
+cmd_entry = tk.Entry(root, font=FONT_TITLE, width=30)
+cmd_entry.grid(row=2, column=1, padx=5, pady=5)
 
-# Create a frame to hold the graphs
-frame = tk.Frame(root, bg=PRIMARY_COLOR)
-frame.grid(row=1, column=0, columnspan=4, padx=20, pady=20, sticky="nsew")
+send_button = tk.Button(root, text="Send", font=FONT_TITLE, command=send_command)
+send_button.grid(row=2, column=2, padx=5, pady=5)
+
+# Create mission time label
+mission_time_label = tk.Label(root, text="--:--:--", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR)
+mission_time_label.grid(row=0, column=4, padx=5, pady=5)
 
 # Start the real-time mission time update
 update_mission_time()
