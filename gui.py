@@ -36,10 +36,10 @@ def generate_random_data():
         y_values = [random.randint(0, 100) if "Temperature" not in key else random.randint(-20, 40) for _ in range(8)]
         graphs_data[key] = (x_values, y_values)
 
-# Function to plot all graphs with dynamic data
+# Adjust subplot layout dynamically
 def plot_all_graphs(fig, axs):
     for idx, (graph_title, (x, y)) in enumerate(graphs_data.items()):
-        row = idx // 4  # Change to 4 columns
+        row = idx // 4  # 4 columns
         col = idx % 4
         ax = axs[row, col]
         ax.clear()
@@ -85,6 +85,7 @@ def update_graphs():
 def simulation_mode():
     # Read CSV then print every 7 values for all graphs
     sim = 0
+    print("Simulation mode activated!")
 
 # Function to send command
 def send_command():
@@ -102,6 +103,17 @@ root = tk.Tk()
 root.title("14 Graph Plotter - Blue & Orange Theme")
 root.geometry("1000x700")  # Set a fixed window size
 root.configure(bg=PRIMARY_COLOR)
+
+# Set the main window to resize dynamically
+root.grid_columnconfigure(0, weight=1)
+root.grid_rowconfigure(1, weight=1)
+
+# Make the other rows and columns dynamically resizable
+for col in range(9):  # Total number of columns used in the grid
+    root.grid_columnconfigure(col, weight=1)
+root.grid_rowconfigure(0, weight=0)  # Static labels row
+root.grid_rowconfigure(1, weight=1)  # Graphs row
+root.grid_rowconfigure(2, weight=0)  # CMD entry row
 
 # Variable to store the command echo
 CMD_ECHO = ""
@@ -129,6 +141,8 @@ cmd_echo_label.grid(row=2, column=3, padx=5, pady=5)
 # Create a figure and axes for the plots
 fig, axs = plt.subplots(4, 4, figsize=(15, 10), dpi=100)  # 16 graphs in a 4x4 grid
 canvas = FigureCanvasTkAgg(fig, master=root)  # Create a canvas to hold the figure
+
+# Ensure the figure canvas stretches dynamically
 canvas.get_tk_widget().grid(row=1, column=0, columnspan=9, padx=10, pady=10, sticky="nsew")
 
 # Create CMD entry and send button
