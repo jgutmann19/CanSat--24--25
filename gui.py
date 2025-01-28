@@ -20,26 +20,38 @@ plt.rcParams.update({'font.size': 14})  # Set default font size for plots
 # Sample Data for Graphs with specified names
 x_values = [-7, -6, -5, -4, -3, -2, -1, 0]  # 8 x-values
 graphs_data = {
-    "Altitude": (x_values, [random.randint(0, 100) for _ in range(8)]),
-    "Temperature": (x_values, [random.randint(-20, 40) for _ in range(8)]),
-    "Pressure": (x_values, [random.randint(900, 1100) for _ in range(8)]),
-    "Voltage": (x_values, [random.uniform(0, 5) for _ in range(8)]),
-    "Gyro_R": (x_values, [random.uniform(-180, 180) for _ in range(8)]),
-    "Gyro_P": (x_values, [random.uniform(-180, 180) for _ in range(8)]),
-    "Gyro_Y": (x_values, [random.uniform(-180, 180) for _ in range(8)]),
-    "Accel_R": (x_values, [random.uniform(-10, 10) for _ in range(8)]),
-    "Accel_P": (x_values, [random.uniform(-10, 10) for _ in range(8)]),
-    "Accel_Y": (x_values, [random.uniform(-10, 10) for _ in range(8)]),
-    "Mag_R": (x_values, [random.uniform(-100, 100) for _ in range(8)]),
-    "Mag_P": (x_values, [random.uniform(-100, 100) for _ in range(8)]),
-    "Mag_Y": (x_values, [random.uniform(-100, 100) for _ in range(8)]),
-    "Auto_Gyro_Rotation_Rate": (x_values, [random.uniform(-360, 360) for _ in range(8)])
+    "Temperature": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
+    "Pressure": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
+    "GPS_Sats": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
+    "GPS_Altitude": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
+    "Accel_R": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
+    "Accel_P": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
+    "Accel_Y": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
+    "Altitude": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
+    "Gyro_R": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
+    "Gyro_P": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
+    "Gyro_Y": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
+    "Gyro_Rotation_Rate": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]), #Auto_
+    "Mag_R": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
+    "Mag_P": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
+    "Mag_Y": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
+    "Voltage": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
 }
 
 # Function to generate random data for graphs
 def generate_random_data():
+    for i in range(7):
+        x_values[i] = x_values[i + 1]
+    x_values[-1] = x_values[-2] + 1
     for key in graphs_data:
-        y_values = [random.randint(0, 100) if "Temperature" not in key else random.randint(-20, 40) for _ in range(8)]
+        y_values = graphs_data[key][1]
+        for i in range(len(y_values) - 1):
+            y_values[i] = y_values[i + 1]
+        if "Temperature" not in key:
+            y_values[-1] = random.randint(0, 100)
+        else:
+            y_values[-1] = random.randint(-20, 40)
+
         graphs_data[key] = (x_values, y_values)
 
 # Adjust subplot layout dynamically
@@ -82,17 +94,26 @@ def plot_all_graphs(fig, axs):
         if graph_title == "Altitude":
             ax.set_ylabel('Altitude (m)', fontname='Verdana')
         elif graph_title == "Temperature":
-            ax.set_ylabel('Temperature (°C)', fontname='Verdana')
+            ax.set_ylabel('Temp (°C)', fontname='Verdana')
         elif graph_title == "Pressure":
-            ax.set_ylabel('Pressure (hPa)', fontname='Verdana')
+            ax.set_ylabel('Pressure (kPa)', fontname='Verdana')
         elif graph_title == "Voltage":
             ax.set_ylabel('Voltage (V)', fontname='Verdana')
         elif graph_title in ["Gyro_R", "Gyro_P", "Gyro_Y"]:
             ax.set_ylabel('Gyro Rate (°/s)', fontname='Verdana')
+        elif graph_title == "Gyro_Rotation_Rate": #"Auto_Gyro_Rotation_Rate":
+            ax.set_ylabel('Degrees (°/s)', fontname='Verdana')
         elif graph_title in ["Accel_R", "Accel_P", "Accel_Y"]:
-            ax.set_ylabel('Acceleration (m/s²)', fontname='Verdana')
+            ax.set_ylabel('Accel (m/s²)', fontname='Verdana')
         elif graph_title in ["Mag_R", "Mag_P", "Mag_Y"]:
-            ax.set_ylabel('Magnetic Field (µT)', fontname='Verdana')
+            ax.set_ylabel('Mag Field (µT)', fontname='Verdana')
+        elif graph_title == "GPS_Altitude":
+            ax.set_ylabel('GPS Altitude (m)', fontname='Verdana')
+        elif graph_title == "GPS_Sats":
+            ax.set_ylabel('GPS Satellites', fontname='Verdana')
+
+        # plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor") # Rotate time marks
+
 
     # Adjust layout to prevent overlap
     plt.subplots_adjust(hspace=1.0, wspace=0.4)  # Adjust space between subplots
@@ -103,6 +124,8 @@ def plot_all_graphs(fig, axs):
 def update_mission_time():
     current_time = time.strftime("Mission Time: %H:%M:%S")
     mission_time_label.config(text=current_time)
+    current_time = time.strftime("Mission (GPS) Time: %H:%M:%S")
+    gps_time_label.config(text=current_time)
     root.after(1000, update_mission_time)  # Update every 1 second
 
 # Function to refresh the graphs with new data every second (1 Hz)
@@ -130,6 +153,11 @@ def send_command():
     if (previous_command == "SIM ENABLE" and command == "SIM_ACTIVATE" 
        or previous_command == "SIM_ACTIVATE" and command == "SIM ENABLE"):
         simulation_mode()
+
+    # This is because I can't be bothered to look for a nice way to close the window after forced fullscreen - Joel
+    if command == "EXIT":
+        quit()
+
     previous_command = command
     print(f"Previous Command: {previous_command}")
     print(f"Command sent: {command}")  # Placeholder for actual command sending logic
@@ -138,13 +166,11 @@ def send_command():
 # Create the main window
 root = tk.Tk()
 root.title("14 Graph Plotter - Blue & Orange Theme")
-root.geometry("1000x700")  # Set a fixed window size
+# root.geometry("1000x700")  # Set a fixed window size (Changed to forced fullscreen)
 root.configure(bg=PRIMARY_COLOR)
 
 # Force full screen
-width = root.winfo_screenwidth()
-height = root.winfo_screenheight()
-root.geometry("%dx%d" % (width, height))  # Set to full screen
+root.attributes("-fullscreen", True)
 
 # Initialize updating_graphs flag
 updating_graphs = False
@@ -155,23 +181,27 @@ static_values = {
     "PACKET_COUNT": "0",
     "MODE": "IDLE",
     "STATE": "OK",
-    "GPS_ALTITUDE": "N/A",
     "GPS_LATITUDE": "N/A",
     "GPS_LONGITUDE": "N/A",
-    "GPS_SATS": "0",
 }
 
 # Layout for static values
 for idx, (label, value) in enumerate(static_values.items()):
-    tk.Label(root, text=f"{label}: {value}", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR).grid(row=0, column=idx, padx=5, pady=5)
+    # Because the mission time is rendered separately, I have this line to prevent the first columns from being printed over
+    # Adjust the offset, change the increment
+    idx += 1
+    row_index = 0
+    if idx > 6:
+        row_index = 1
+    tk.Label(root, text=f"{label}: {value}", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR).grid(row=row_index, column=idx%7, padx=5, pady=5)
 
 # Create a figure and axes for the plots
-fig, axs = plt.subplots(4, 4, figsize=(15, 10), dpi=100, sticky="nsew")  # 16 graphs in a 4x4 grid
+fig, axs = plt.subplots(4, 4, figsize=(20, 25), dpi=120)  # 16 graphs in a 4x4 grid
 fig.patch.set_facecolor('#F0F0F0')  # Light gray background
 canvas = FigureCanvasTkAgg(fig, master=root)
 
 # Ensure the figure canvas stretches dynamically
-canvas.get_tk_widget().grid(row=1, column=0, columnspan=9, padx=10, pady=10, sticky="nsew")
+canvas.get_tk_widget().grid(row=3, column=0, columnspan=9, padx=10, pady=10)# , sticky="nsew")
 
 # Set the main window to resize dynamically
 root.grid_columnconfigure(0, weight=1)
@@ -181,12 +211,13 @@ root.grid_rowconfigure(1, weight=1)
 for col in range(9):  # Total number of columns used in the grid
     root.grid_columnconfigure(col, weight=1)
 root.grid_rowconfigure(0, weight=0)  # Static labels row
-root.grid_rowconfigure(1, weight=1)  # Graphs row
+root.grid_rowconfigure(1, weight=0)  # More labels
 root.grid_rowconfigure(2, weight=0)  # CMD entry row
+root.grid_rowconfigure(3, weight=1)  # Graphs row
 
 # Update CMD label, entry, and button to center them at the bottom
 cmd_frame = tk.Frame(root, bg=PRIMARY_COLOR)  # Create a frame to contain the CMD controls
-cmd_frame.grid(row=3, column=0, columnspan=9, padx=10, pady=10, sticky="ew")  # Span the entire width
+cmd_frame.grid(row=2, column=0, columnspan=9, padx=10, pady=5, sticky="ew")  # Span the entire width
 
 cmd_frame.grid_columnconfigure(0, weight=1)  # Left spacer
 cmd_frame.grid_columnconfigure(1, weight=0)  # CMD label
@@ -210,7 +241,11 @@ send_button.grid(row=0, column=3, padx=0, pady=10, sticky="w")
 
 # Create mission time label
 mission_time_label = tk.Label(root, text="--:--:--", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR)
-mission_time_label.grid(row=0, column=4, padx=5, pady=5)
+mission_time_label.grid(row=0, column=0, padx=5, pady=5)
+
+# Create mission time label
+gps_time_label = tk.Label(root, text="--:--:--", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR)
+gps_time_label.grid(row=1, column=0, padx=5, pady=5)
 
 # Start the real-time mission time update
 update_mission_time()
