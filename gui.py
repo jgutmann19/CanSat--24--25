@@ -17,9 +17,8 @@ previous_command = ""
 # 14 point min text font
 plt.rcParams.update({'font.size': 14})  # Set default font size for plots
 
-
 # Sample Data for Graphs with specified names
-x_values = [1, 2, 3, 4, 5, 6, 7, 8]  # 8 x-values
+x_values = [-7, -6, -5, -4, -3, -2, -1, 0]  # 8 x-values
 graphs_data = {
     "Altitude": (x_values, [random.randint(0, 100) for _ in range(8)]),
     "Temperature": (x_values, [random.randint(-20, 40) for _ in range(8)]),
@@ -77,7 +76,7 @@ def plot_all_graphs(fig, axs):
         ax.set_xlabel('Time (s)', fontname='Verdana')
         ax.set_ylabel('Y Axis', fontname='Verdana')
         ax.grid(True, linestyle='--', alpha=0.6)
-        ax.legend(loc='upper left')
+        # ax.legend(loc='upper left')
 
         # Customize y-axis labels based on the graph title
         if graph_title == "Altitude":
@@ -112,10 +111,10 @@ def update_graphs():
     if updating_graphs:
         return  # Skip if an update is already in progress
     updating_graphs = True
-    generate_random_data()  # Generate new random data
+    generate_random_data()  # Generate new random dataf
     plot_all_graphs(fig, axs)  # Update the existing figure and axes
     updating_graphs = False
-    root.after(1000, update_graphs)  # Schedule the next update in 1 second
+    root.after(500, update_graphs)  # Schedule the next update in 1 second
 
 def simulation_mode():
     # Simulation mode logic
