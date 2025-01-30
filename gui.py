@@ -15,13 +15,13 @@ CMD_ECHO = ""  # Initialize CMD_ECHO with an empty string
 
 global previous_command
 global curr_packet
+global last_packet
 global generate_new_packet
-global packet_counter
 
 previous_command = ""
 curr_packet = ""
+last_packet = ""
 generate_new_packet = True
-packet_counter = 0
 
 # 14 point min text font
 plt.rcParams.update({'font.size': 14})  # Set default font size for plots
@@ -59,7 +59,7 @@ def collect_graph_data():
         gyro_latitude_points[i] = gyro_latitude_points[i + 1]
         gyro_longitude_points[i] = gyro_longitude_points[i + 1]
 
-    x_values[7] = curr_packet[0]
+    x_values[7] = int(curr_packet[0])
     gyro_altitude_points[7] = int(curr_packet[21])
     gyro_latitude_points[7] = int(curr_packet[22])
     gyro_longitude_points[7] = int(curr_packet[23])
@@ -143,12 +143,9 @@ def plot_all_graphs(fig, axs):
         ax.yaxis.set_major_locator(MaxNLocator(nbins=4))
         ax.xaxis.set_major_locator(MaxNLocator(nbins=4))
 
-        # Highlight area under the curve (brokie, no clue why - Joel)
-        # ax.fill_between(x, y, color='orange', alpha=0.2)
-
         # Add title, axis labels, and other formatting
         ax.set_title(graph_title, weight='bold', color='darkblue', fontname='Verdana')
-        # ax.set_xlabel('Packets', fontname='Verdana')
+        ax.set_xlabel('Packets', fontname='Verdana')
         ax.set_ylabel('Y Axis', fontname='Verdana')
         ax.grid(True, linestyle='--', alpha=0.6)
 
@@ -175,7 +172,7 @@ def plot_all_graphs(fig, axs):
             ax.set_ylabel('GPS Satellites', fontname='Verdana')
 
     # Adjust layout to prevent overlap
-    # plt.subplots_adjust(hspace=1.0, wspace=1.4)  # Adjust space between subplots
+    plt.subplots_adjust(hspace=1.0, wspace=1.4)  # Adjust space between subplots
     canvas.draw()  # Redraw the canvas
 
 def plot_3d_graphs(fig_3d, axs_3d):
@@ -199,15 +196,22 @@ def update_mission_time():
     root.after(1000, update_mission_time)  # Update every 1 second
 
 # Function to refresh the graphs with new data every second (1 Hz) (This might change to the "Update Everything" func)
+# FIXME : Do we change this to update all?
 def update_graphs():
     global updating_graphs, curr_packet, packet_counter
     get_last_csv_row("SimCSV.csv")
 
-    current_time = "GPS Time: " + str(curr_packet[20])
+    try:
+        current_time = "GPS Time: " + str(curr_packet[20])
+    except:
+        current_time = "GPS Time: " + str(last_packet[20])
     gps_time_label.config(text=current_time)
 
-    packet_count_label.config(text=f"Packet Count: {packet_counter}")
+    packet_count_label.config(text=f"Packet Count: {curr_packet[0]}")
     team_id_label.config(text=f"Team ID: {curr_packet[1]}")
+    mode_label.config(text=f"Mode: {curr_packet[4]}")
+    state_label.config(text=f"State: {curr_packet[5]}")
+    cmd_echo_label.config(text=f"Command Echo: {curr_packet[25]}")
 
     if updating_graphs:
         return  # Skip if an update is already in progress
@@ -244,7 +248,8 @@ def send_command():
     cmd_entry.delete(0, tk.END)  # Clear the command entry field
 
 def get_last_csv_row(filename):
-    global curr_packet, packet_counter, generate_new_packet
+    global curr_packet, last_packet, packet_counter, generate_new_packet
+    last_packet = curr_packet
     if generate_new_packet and not updating_graphs:
         generate_new_packet = False
         try:
@@ -254,10 +259,7 @@ def get_last_csv_row(filename):
                 for row in open_csv:
                     last_row = row
                 curr_packet = last_row
-                packet_counter += 1
-
-
-        except:
+        except: # Just incase the CSV has not been created yet
             curr_packet = [0 for _ in range(26)]
         generate_new_packet = True
 
@@ -274,8 +276,8 @@ root.attributes("-fullscreen", True)
 updating_graphs = False
 
 # Create a figure and axes for the plots
-fig, axs = plt.subplots(4, 4, figsize=(20, 15), dpi=80)  # 16 graphs in a 4x4 grid
-# fig.patch.set_facecolor('#F0F0F0')  # Light gray background
+fig, axs = plt.subplots(4, 4, figsize=(20, 15), dpi=80, constrained_layout=True)  # 16 graphs in a 4x4 grid
+fig.patch.set_facecolor('#F0F0F0')  # Light gray background
 canvas = FigureCanvasTkAgg(fig, master=root)
 
 # Create 3D graph
@@ -316,11 +318,11 @@ cmd_frame.grid_columnconfigure(3, weight=0)  # Send button
 cmd_frame.grid_columnconfigure(4, weight=1)  # Right spacer
 
 # Create a label for command echo
-cmd_echo_label = tk.Label(cmd_frame, text=f"CMD_ECHO: {CMD_ECHO}", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR)
+cmd_echo_label = tk.Label(cmd_frame, text=f"Command Echo: {CMD_ECHO}", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR)
 cmd_echo_label.grid(row=0, column=0, padx=5)
 
 # Add CMD label, entry, and button to the frame
-cmd_label = tk.Label(cmd_frame, text="CMD:", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR)
+cmd_label = tk.Label(cmd_frame, text="Command:", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR)
 cmd_label.grid(row=0, column=1, padx=(0, 5), sticky="e")
 
 cmd_entry = tk.Entry(cmd_frame, font=FONT_TITLE, width=30)
@@ -348,14 +350,6 @@ mode_label.grid(row=0, column=3, padx=5, pady=5)
 # Create State label
 state_label = tk.Label(root, text="State: OK", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR)
 state_label.grid(row=1, column=1, padx=5, pady=5)
-
-# # Create GPS Latitude label
-# gps_latitude_label = tk.Label(root, text="GPS Latitude: N/A", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR)
-# gps_latitude_label.grid(row=0, column=5, padx=5, pady=5)
-#
-# # Create GPS Longitude label
-# gps_longitude_label = tk.Label(root, text="GPS Longitude: N/A", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR)
-# gps_longitude_label.grid(row=0, column=6, padx=5, pady=5)
 
 # Create GPS time label
 gps_time_label = tk.Label(root, text="--:--:--", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR)
