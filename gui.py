@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.mplot3d import Axes3D
 import random
-import time
+from datetime import datetime, timezone
 import csv
 
 # Colors and Fonts for Blue and Orange Theme
@@ -13,11 +13,11 @@ TEXT_COLOR = '#DE9100'      # Orange
 FONT_TITLE = ("Verdana", 12, "bold")
 CMD_ECHO = ""  # Initialize CMD_ECHO with an empty string
 
+# various global variables
 global previous_command
 global curr_packet
 global last_packet
 global generate_new_packet
-
 previous_command = ""
 curr_packet = ""
 last_packet = ""
@@ -32,7 +32,6 @@ graphs_data = {
     "Temperature": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
     "Pressure": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
     "GPS_Sats": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
-    # "GPS_Altitude": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
     "Accel_R": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
     "Accel_P": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
     "Accel_Y": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
@@ -46,24 +45,34 @@ graphs_data = {
     "Mag_Y": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
     "Voltage": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
 }
+# Data arrays for the 3D plot
 gyro_latitude_points = [0, 1, 2, 3, 4, 5, 6, 7]
 gyro_longitude_points = [0, 1, 2, 3, 4, 5, 6, 7]
 gyro_altitude_points = [0, 1, 2, 3, 4, 5, 6, 7]
 
 # Collect current graph data from the latest packet  Old: (Function to generate random data for graphs)
 def collect_graph_data():
+    # Just in case the CSV stops being updated. This keeps the graphs as the last 8 available values instead of turning
+    # into a single point on a plot
+    if curr_packet == last_packet:
+        return
+
     # I'm going to keep the auto scrolling time values as it'll give a good point of reference on whether the packets are stalled
     for i in range(7):
         x_values[i] = x_values[i + 1]
-        gyro_altitude_points[i] = gyro_altitude_points[i + 1]
-        gyro_latitude_points[i] = gyro_latitude_points[i + 1]
-        gyro_longitude_points[i] = gyro_longitude_points[i + 1]
+        # If we only want the last 8 seconds (packets) of flight data for the 3d plot, uncomment these lines and adjust
+        # the relevant "append" lines
+        # gyro_altitude_points[i] = gyro_altitude_points[i + 1]
+        # gyro_latitude_points[i] = gyro_latitude_points[i + 1]
+        # gyro_longitude_points[i] = gyro_longitude_points[i + 1]
 
     x_values[7] = int(curr_packet[0])
-    gyro_altitude_points[7] = int(curr_packet[21])
-    gyro_latitude_points[7] = int(curr_packet[22])
-    gyro_longitude_points[7] = int(curr_packet[23])
+    # Currently tracks all GPS data for the 3D plot
+    gyro_altitude_points.append(int(curr_packet[21]))
+    gyro_latitude_points.append(int(curr_packet[22]))
+    gyro_longitude_points.append(int(curr_packet[23]))
 
+    # Collect data from the latest packet for each field in the graphs_data dictionary
     for key in graphs_data:
         y_values = graphs_data[key][1]
         for i in range(len(y_values) - 1):
@@ -114,26 +123,23 @@ def collect_graph_data():
         elif key == "GPS_Sats":
             y_values[-1] = int(curr_packet[24])
 
-        # else:
-        #     gyro_graph_data_points[-1] = []
-
-        graphs_data[key] = (x_values, y_values)
+        graphs_data[key] = (x_values, y_values) # Update the dictionary with the new values
 
 # Adjust subplot layout dynamically
-def plot_all_graphs(fig, axs):
+def plot_all_graphs(fig_func, axs_func):
     total_graphs = len(graphs_data)  # Number of graphs to plot
     rows = (total_graphs + 3) // 4  # Dynamically calculate number of rows
     cols = 4  # Fixed number of columns
 
     # Hide unused axes
-    for ax in axs.flatten()[total_graphs:]:
+    for ax in axs_func.flatten()[total_graphs:]:
         ax.set_visible(False)
 
     for idx, (graph_title, (x, y)) in enumerate(graphs_data.items()):
         row = idx // cols  # Calculate row position
         col = idx % cols   # Calculate column position
         
-        ax = axs[row, col]
+        ax = axs_func[row, col]
         ax.clear()
 
         # Plot data as before
@@ -175,37 +181,42 @@ def plot_all_graphs(fig, axs):
     plt.subplots_adjust(hspace=1.0, wspace=1.4)  # Adjust space between subplots
     canvas.draw()  # Redraw the canvas
 
-def plot_3d_graphs(fig_3d, axs_3d):
+# Like the previous function but just for the 3D plot for some separation
+def plot_3d_graphs(fig_3d_func, axs_3d_func):
     global gyro_latitude_points, gyro_longitude_points, gyro_altitude_points
 
-    axs_3d.clear()
-    axs_3d.set_title('GPS Position')
-    axs_3d.set_xlabel('GPS Latitude')
-    axs_3d.set_ylabel('GPS Longitude')
-    axs_3d.set_zlabel('GPS Altitude')
-    axs_3d.plot(gyro_latitude_points, gyro_longitude_points, gyro_altitude_points, color='darkblue')
-    fig_3d.patch.set_facecolor('#F0F0F0')
-
+    axs_3d_func.clear() # Clear out the plot for new data
+    axs_3d_func.set_title('GPS Position') # Plot title
+    axs_3d_func.set_xlabel('GPS Latitude') # Rename the axis, mostly sure they are on the correct axis
+    axs_3d_func.set_ylabel('GPS Longitude')
+    axs_3d_func.set_zlabel('GPS Altitude')
+    axs_3d_func.plot(gyro_latitude_points, gyro_longitude_points, gyro_altitude_points, color='darkblue')
+    fig_3d_func.patch.set_facecolor('#F0F0F0')
     canvas_3d.draw()
 
 # Function to update the mission time dynamically
 def update_mission_time():
-    current_time = time.strftime("Mission Time: %H:%M:%S")
+    current_time = datetime.now(timezone.utc).strftime('%H:%M:%S') # Get the current time in UTC
     mission_time_label.config(text=current_time)
 
     root.after(1000, update_mission_time)  # Update every 1 second
 
-# Function to refresh the graphs with new data every second (1 Hz) (This might change to the "Update Everything" func)
-# FIXME : Do we change this to update all?
-def update_graphs():
+# Function to refresh all displayed variables with new data every second (1 Hz)
+def update_everything():
     global updating_graphs, curr_packet, packet_counter
-    get_last_csv_row("SimCSV.csv")
-
+    get_last_csv_row("SimCSV.csv") # Get the last row in the csv
     try:
-        current_time = "GPS Time: " + str(curr_packet[20])
+        current_time = "GPS Time: " + str(curr_packet[20]) # First attempt to get the latest GPS time
     except:
-        current_time = "GPS Time: " + str(last_packet[20])
+        current_time = "GPS Time: " + str(last_packet[20]) # Just in case the csv was mid write when the line was accessed
     gps_time_label.config(text=current_time)
+
+    # Update variables along the top of the UI
+
+    # There are 25 values sent in the telemetry packets, but the generated csv creates a 0th column with the
+    # number representing the current row, this causes the telemetry data to be effectively 1 indexed. I don't
+    # think this should be changed when the XBEE is implemented because it represents how many packets we have
+    # received not how many packets have been sent as is represented in the telemetry packet - Joel
 
     packet_count_label.config(text=f"Packet Count: {curr_packet[0]}")
     team_id_label.config(text=f"Team ID: {curr_packet[1]}")
@@ -218,13 +229,13 @@ def update_graphs():
     updating_graphs = True
     collect_graph_data()  # Generate new random dataf
     plot_all_graphs(fig, axs)  # Update the existing figure and axes
-    plot_3d_graphs(fig_3d, axs_3d)
-
+    plot_3d_graphs(fig_3d, axs_3d) # Update the 3D figure and axes
     updating_graphs = False
-    root.after(500, update_graphs)  # Schedule the next update in 1 second
+
+    root.after(500, update_everything)  # Schedule the next update in 1 second
 
 def simulation_mode():
-    # Simulation mode logic
+    # FIXME : Simulation mode logic ------------------------------------------------------------------------------------
     print("Simulation mode activated!")
 
 # Function to send command
@@ -244,23 +255,31 @@ def send_command():
 
     previous_command = command
     print(f"Previous Command: {previous_command}")
-    print(f"Command sent: {command}")  # Placeholder for actual command sending logic
+    print(f"Command sent: {command}")  # FIXME : Placeholder for actual command sending logic --------------------------
     cmd_entry.delete(0, tk.END)  # Clear the command entry field
 
+# Gather the latest packet of data using the csv as a middle man
 def get_last_csv_row(filename):
+
+    # There are 25 values sent in the telemetry packets, but the generated csv creates a 0th column with the
+    # number representing the current row, this causes the telemetry data to be effectively 1 indexed. I don't
+    # think this should be changed when the XBEE is implemented because it represents how many packets we have
+    # received not how many packets have been sent as is represented in the telemetry packet - Joel
+
     global curr_packet, last_packet, packet_counter, generate_new_packet
     last_packet = curr_packet
-    if generate_new_packet and not updating_graphs:
+    if generate_new_packet and not updating_graphs: # ensure that the graphs are in a stable state and not currently collecting a packet
         generate_new_packet = False
-        try:
+        try: # Always have this when doing anything with a file, should only ever be 'read' in this program
             with open(filename, 'r') as file:
                 open_csv = csv.reader(file)
                 last_row = None
-                for row in open_csv:
+                for row in open_csv: # Only need the latest packet in the csv
                     last_row = row
                 curr_packet = last_row
-        except: # Just incase the CSV has not been created yet
+        except: # Just incase the CSV has not been created yet or is not read correctly
             curr_packet = [0 for _ in range(26)]
+
         generate_new_packet = True
 
 # Create the main window
@@ -282,13 +301,13 @@ canvas = FigureCanvasTkAgg(fig, master=root)
 
 # Create 3D graph
 fig_3d = plt.figure()
-axs_3d = fig_3d.add_subplot(projection='3d')
-axs_3d.set_title('GPS Position')
-axs_3d.set_xlabel('GPS Latitude')
-axs_3d.set_ylabel('GPS Longitude')
-axs_3d.set_zlabel('GPS Altitude')
-axs_3d.plot(gyro_latitude_points, gyro_longitude_points, gyro_altitude_points)
-fig_3d.patch.set_facecolor('#F0F0F0')
+axs_3d = fig_3d.add_subplot(projection='3d') # Designates the axes as a 3d plot
+axs_3d.set_title('GPS Position') # Plot title
+axs_3d.set_xlabel('GPS Latitude') # X-axis
+axs_3d.set_ylabel('GPS Longitude') # Y-axis
+axs_3d.set_zlabel('GPS Altitude') # Z-axis
+axs_3d.plot(gyro_latitude_points, gyro_longitude_points, gyro_altitude_points) # X Y Z
+fig_3d.patch.set_facecolor('#F0F0F0') # Light gray background
 canvas_3d = FigureCanvasTkAgg(fig_3d, master=root)
 
 # Ensure the figure canvas stretches dynamically
@@ -356,7 +375,7 @@ gps_time_label = tk.Label(root, text="--:--:--", font=FONT_TITLE, bg=PRIMARY_COL
 gps_time_label.grid(row=1, column=0, padx=5)
 
 # Start updating graphs every second
-update_graphs()
+update_everything()
 
 # Start the real-time mission time update
 update_mission_time()

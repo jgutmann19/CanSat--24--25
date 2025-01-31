@@ -4,6 +4,7 @@ from datetime import datetime
 import random
 import numpy as np
 import time
+from datetime import datetime, timezone
 import os
 
 now = datetime.now()
@@ -18,6 +19,11 @@ df = pd.DataFrame(np.empty((0, 25)))
 df.columns = ["TEAM_ID","MISSION_TIME","PACKET_COUNT","MODE","STATE","ALTITUDE","TEMPERATURE", "PRESSURE", "VOLTAGE",
               "GYRO_R", "GYRO_P", "GYRO_Y", "ACCEL_R", "ACCEL_P", "ACCEL_Y", "MAGN_R", "MAGN_P", "MAGN_Y",
               "AUTO_GRYO_ROTATION_RATE", "GPS_TIME", "GPS_ALTITUDE", "GPS_LATITUDE", "GPS_LONGITUDE", "GPS_SATS", "CMD_ECHO"]
+
+# There are 25 values sent in the telemetry packets, but the generated csv creates a 0th column with the
+# number representing the current row, this causes the telemetry data to be effectively 1 indexed. I don't
+# think this should be changed when the XBEE is implemented because it represents how many packets we have
+# received not how many packets have been sent as is represented in the telemetry packet - Joel
 
 df.loc[0] = [3174, # Team_ID                                            1
             str(datetime.now())[11:][:-7], # Mission_Time               2
@@ -40,8 +46,8 @@ df.loc[0] = [3174, # Team_ID                                            1
             random.randint(1,10), # Auto_Gyro_Rotation_Rate       19
             str(datetime.now())[11:][:-7], # GPS_Time                   20
             random.randint(1,100), # GPS_Altitude                 21
-            random.randint(1, 100), # GPS_Latitude                22
-            random.randint(1, 100), # GPS_Longitude               23
+            random.randint(1, 50), # GPS_Latitude                22
+            random.randint(1, 50), # GPS_Longitude               23
             random.randint(1, 3), # GPS_Sats                      24
             cmd] # CMD                                                  25
 
@@ -66,7 +72,7 @@ while(packet_count <= 1000):
 
     start = time.perf_counter()
     df.loc[len(df.index)] = [3174, # Team_ID
-                            str(datetime.now())[11:][:-7], # Mission_Time
+                            datetime.now(timezone.utc).strftime('%H:%M:%S'), # Mission_Time in UTC
                             packet_count, # Packet_Count
                             mode, # Mode
                             state, # State
