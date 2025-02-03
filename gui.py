@@ -197,8 +197,7 @@ def plot_3d_graphs(fig_3d_func, axs_3d_func):
 # Function to update the mission time dynamically
 def update_mission_time():
     current_time = datetime.now(timezone.utc).strftime('%H:%M:%S') # Get the current time in UTC
-    mission_time_label.config(text=current_time)
-
+    mission_time_label.config(text=f"Mission Time: {current_time}")
     root.after(1000, update_mission_time)  # Update every 1 second
 
 # Function to refresh all displayed variables with new data every second (1 Hz)

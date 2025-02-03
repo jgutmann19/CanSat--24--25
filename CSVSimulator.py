@@ -51,7 +51,8 @@ df.loc[0] = [3174, # Team_ID                                            1
             random.randint(1, 3), # GPS_Sats                      24
             cmd] # CMD                                                  25
 
-
+global last_packet
+last_packet = df.loc[0]
 while(packet_count <= 1000):
     if state == "LAUNCH_WAIT":
         state = "ASCENT"
@@ -91,12 +92,13 @@ while(packet_count <= 1000):
                             random.randint(1, 100), # Magn_Y
                             random.randint(1,10), # Auto_Gryo_Rotation_Rate
                             str(datetime.now())[11:][:-7], # GPS_Time
-                            random.randint(1,100), # GPS_Altitude
-                            random.randint(1, 100), # GPS_Latitude
-                            random.randint(1, 100), # GPS_Longitude
+                            df.iloc[-1]["GPS_ALTITUDE"] + random.randint(10,50), # GPS_Altitude
+                            df.iloc[-1]["GPS_LATITUDE"] + random.randint(5,10), # GPS_Latitude
+                            df.iloc[-1]["GPS_LONGITUDE"] + random.randint(1,5), # GPS_Longitude
                             random.randint(1, 3), # GPS_Sats
                             cmd] # CMD
     # print(df)
+    last_packet = df.loc[len(df.index)-1]
     time.sleep(1.0)
 
     df.to_csv("SimCSV.csv")
