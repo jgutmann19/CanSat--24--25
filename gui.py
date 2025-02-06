@@ -6,6 +6,9 @@ from mpl_toolkits.mplot3d import Axes3D
 import random
 from datetime import datetime, timezone
 import csv
+import threading
+
+from GCSXbee import TelemetryHandler 
 
 # Colors and Fonts for Blue and Orange Theme
 PRIMARY_COLOR = '#F0F0F0'   # Light gray
@@ -241,6 +244,7 @@ def simulation_mode():
 
 # Function to send command
 def send_command():
+
     command = cmd_entry.get()
     global previous_command
     if (previous_command == "SIMULATION ENABLE" and command == "SIMULATION ACTIVATE"):
@@ -255,6 +259,14 @@ def send_command():
     previous_command = curr_packet[25]
     print(f"Previous Command: {previous_command}")
     print(f"Command sent: {command}")  # FIXME : Placeholder for actual command sending logic --------------------------
+
+    # Set up multithreading to run the commands while still displaying the graphs
+    telemetry_handler = TelemetryHandler("3174")
+    t = threading.Thread(target=telemetry_handler.send_command, args=(command,))
+    t.start()
+
+
+
     cmd_entry.delete(0, tk.END)  # Clear the command entry field
 
 # Gather the latest packet of data using the csv as a middle man
