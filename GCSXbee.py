@@ -3,6 +3,9 @@ import os
 import time
 from threading import Thread
 from datetime import datetime
+
+os.environ["KUBECONFIG"] = os.path.abspath("kube_config.yaml")
+
 from digi.xbee.devices import XBeeDevice
 
 class TelemetryHandler:
@@ -75,6 +78,7 @@ class TelemetryHandler:
         Args:
             command (str): Command string following competition format.
         """
+        print("Sending command:", command)
         try:
             if self.xbee_device.is_open():
                 self.xbee_device.send_data_broadcast(command.strip())
