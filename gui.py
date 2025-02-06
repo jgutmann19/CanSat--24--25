@@ -10,7 +10,7 @@ import csv
 # Colors and Fonts for Blue and Orange Theme
 PRIMARY_COLOR = '#F0F0F0'   # Light gray
 TEXT_COLOR = '#DE9100'      # Orange
-FONT_TITLE = ("Verdana", 12, "bold")
+FONT_TITLE = ("Verdana", 14, "bold")
 CMD_ECHO = ""  # Initialize CMD_ECHO with an empty string
 
 # various global variables
@@ -18,10 +18,12 @@ global previous_command
 global curr_packet
 global last_packet
 global generate_new_packet
+global simulation_active
 previous_command = ""
 curr_packet = ""
 last_packet = ""
 generate_new_packet = True
+simulation_active = False
 
 # 14 point min text font
 plt.rcParams.update({'font.size': 14})  # Set default font size for plots
@@ -202,7 +204,7 @@ def update_mission_time():
 
 # Function to refresh all displayed variables with new data every second (1 Hz)
 def update_everything():
-    global updating_graphs, curr_packet, packet_counter
+    global updating_graphs, curr_packet, packet_counter, previous_command
     get_last_csv_row("SimCSV.csv") # Get the last row in the csv
     try:
         current_time = "GPS Time: " + str(curr_packet[20]) # First attempt to get the latest GPS time
@@ -223,36 +225,34 @@ def update_everything():
     state_label.config(text=f"State: {curr_packet[5]}")
     cmd_echo_label.config(text=f"Command Echo: {curr_packet[25]}")
 
-    if updating_graphs:
-        return  # Skip if an update is already in progress
-    updating_graphs = True
-    collect_graph_data()  # Generate new random dataf
-    plot_all_graphs(fig, axs)  # Update the existing figure and axes
-    plot_3d_graphs(fig_3d, axs_3d) # Update the 3D figure and axes
-    updating_graphs = False
+    if not updating_graphs: # Skips if an update is already in progress
+        updating_graphs = True
+        collect_graph_data()  # Generate new random dataf
+        plot_all_graphs(fig, axs)  # Update the existing figure and axes
+        plot_3d_graphs(fig_3d, axs_3d) # Update the 3D figure and axes
+        updating_graphs = False
 
-    root.after(500, update_everything)  # Schedule the next update in 1 second
+    root.after(50, update_everything) # Because the packets come in at 1Hz, update the graphs ASAP after the new packet is received
 
 def simulation_mode():
-    # FIXME : Simulation mode logic ------------------------------------------------------------------------------------
-    print("Simulation mode activated!")
+    # FIXME : Placeholder for actual simulation mode logic --------------------------
+    # May need to create duplicate functions for the simulation mode so that we can pull sim data from the sim csv
+    pass
 
 # Function to send command
 def send_command():
     command = cmd_entry.get()
-    global CMD_ECHO  # Use global variable to update CMD_ECHO
-    CMD_ECHO = command  # Update CMD_ECHO with the command
-    cmd_echo_label.config(text=f"CMD_ECHO: {CMD_ECHO}")  # Update the label
     global previous_command
-    if (previous_command == "SIM ENABLE" and command == "SIM_ACTIVATE" 
-       or previous_command == "SIM_ACTIVATE" and command == "SIM ENABLE"):
-        simulation_mode()
+    if (previous_command == "SIMULATION ENABLE" and command == "SIMULATION ACTIVATE"):
+        simulation_active = True
+    elif command == "SIMULATION DISABLE":
+        simulation_active = False
 
     # This is because I can't be bothered to look for a nice way to close the window after forced fullscreen - Joel
-    if command in ["EXIT", "exit"]:
+    elif command in ["EXIT", "exit"]:
         quit()
 
-    previous_command = command
+    previous_command = curr_packet[25]
     print(f"Previous Command: {previous_command}")
     print(f"Command sent: {command}")  # FIXME : Placeholder for actual command sending logic --------------------------
     cmd_entry.delete(0, tk.END)  # Clear the command entry field
@@ -288,7 +288,12 @@ root.title("14 Graph Plotter - Blue & Orange Theme")
 root.configure(bg=PRIMARY_COLOR)
 
 # Force full screen
-root.attributes("-fullscreen", True)
+# root.attributes("-fullscreen", True)
+
+width= root.winfo_screenwidth() 
+height= root.winfo_screenheight()
+#setting tkinter window size
+root.geometry("%dx%d" % (width, height))
 
 # Initialize updating_graphs flag
 updating_graphs = False
@@ -330,9 +335,9 @@ cmd_frame = tk.Frame(root, bg=PRIMARY_COLOR)  # Create a frame to contain the CM
 cmd_frame.grid(row=2, column=0, columnspan=9,  sticky="ew")  # Span the entire width
 
 cmd_frame.grid_columnconfigure(0, weight=1)  # Left spacer
-cmd_frame.grid_columnconfigure(1, weight=0)  # CMD label
-cmd_frame.grid_columnconfigure(2, weight=0)  # CMD entry
-cmd_frame.grid_columnconfigure(3, weight=0)  # Send button
+cmd_frame.grid_columnconfigure(1, weight=1)  # CMD label
+cmd_frame.grid_columnconfigure(2, weight=1)  # CMD entry
+cmd_frame.grid_columnconfigure(3, weight=1)  # Send button
 cmd_frame.grid_columnconfigure(4, weight=1)  # Right spacer
 
 # Create a label for command echo

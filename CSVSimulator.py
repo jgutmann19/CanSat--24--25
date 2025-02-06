@@ -30,25 +30,25 @@ df.loc[0] = [3174, # Team_ID                                            1
             packet_count, # Packet_Count                                3
             mode, # Mode                                                4
             state, # State                                              5
-            random.randint(1,100), # Altitude                     6
-            random.randint(1,100), # Temperature                  7
-            random.randint(1, 100), # Pressure                    8
-            random.randint(1, 100), # Voltage                     9
-            random.randint(1,360), # Gyro_R                       10
-            random.randint(1,360), # Gyro_P                       11
-            random.randint(1,360), # Gyro_Y                       12
-            random.randint(1,360), # Accel_R                      13
-            random.randint(1,360), # Accel_P                      14
-            random.randint(1,360), # Accel_Y                      15
-            random.randint(1,100), # Magn_R                       16
-            random.randint(1, 100), # Magn_P                      17
-            random.randint(1, 100), # Magn_Y                      18
-            random.randint(1,10), # Auto_Gyro_Rotation_Rate       19
+            random.randint(1,100), # Altitude                           6
+            random.randint(1,100), # Temperature                        7
+            random.randint(1, 100), # Pressure                          8
+            random.randint(1, 100), # Voltage                           9
+            random.randint(1,360), # Gyro_R                             10
+            random.randint(1,360), # Gyro_P                             11
+            random.randint(1,360), # Gyro_Y                             12
+            random.randint(1,360), # Accel_R                            13
+            random.randint(1,360), # Accel_P                            14
+            random.randint(1,360), # Accel_Y                            15
+            random.randint(1,100), # Magn_R                             16
+            random.randint(1, 100), # Magn_P                            17
+            random.randint(1, 100), # Magn_Y                            18
+            random.randint(1,10), # Auto_Gyro_Rotation_Rate             19
             str(datetime.now())[11:][:-7], # GPS_Time                   20
-            random.randint(1,100), # GPS_Altitude                 21
-            random.randint(1, 50), # GPS_Latitude                22
-            random.randint(1, 50), # GPS_Longitude               23
-            random.randint(1, 3), # GPS_Sats                      24
+            random.randint(1,100), # GPS_Altitude                       21
+            random.randint(1, 50), # GPS_Latitude                       22
+            random.randint(1, 50), # GPS_Longitude                      23
+            random.randint(1, 3), # GPS_Sats                            24
             cmd] # CMD                                                  25
 
 global last_packet
@@ -64,10 +64,15 @@ while(packet_count <= 1000):
     else:
         mode = "S"
 
-    if cmd == "CXON":
-        cmd = "ST"
+    # if cmd == "CXON":
+    #     cmd = "ST"
+    # else:
+    #     cmd = "CXON"
+        
+    if cmd == "SIMULATION ENABLE":
+        cmd = "SIMULATION ACTIVATE"
     else:
-        cmd = "CXON"
+        cmd = "SIMULATION ENABLE"
 
     packet_count += 1
 
