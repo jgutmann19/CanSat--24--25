@@ -2,11 +2,12 @@ import csv
 import os
 import time
 from threading import Thread
-from datetime import datetime
+from datetime import datetime, timezone
 
-os.environ["KUBECONFIG"] = os.path.abspath("kube_config.yaml")
+# os.environ["KUBECONFIG"] = os.path.abspath("kube_config.yaml")
 
 from digi.xbee.devices import XBeeDevice
+from xbee import ZigBee
 
 class TelemetryHandler:
     def __init__(self, team_id, port="COM3", baudrate=9600): # default port val for Fernando's laptop
@@ -23,6 +24,8 @@ class TelemetryHandler:
         self.csv_file = None
         self.csv_writer = None
         self.packet_count = 0
+        self.sim_enable = False
+        self.sim_activate = False
 
         # Define telemetry fields as per competition requirements
         self.telemetry_fields = [
@@ -39,7 +42,9 @@ class TelemetryHandler:
         # Initialize XBee connection
         self.xbee_device = XBeeDevice(port, baudrate)
         try:
+            print("Opening XBee device...")
             self.xbee_device.open()
+            print("XBee device opened successfully.")
         except Exception as e:
             raise Exception(f"Failed to open XBee device: {e}")
 
@@ -67,9 +72,9 @@ class TelemetryHandler:
         if self.csv_file:
             self.csv_file.close()
 
-        if self.xbee_device and self.xbee_device.is_open():
-            self.send_command(f"CMD,{self.team_id},CX,OFF")
-            self.xbee_device.close()
+        # if self.xbee_device and self.xbee_device.is_open():
+        #     self.send_command(f"CMD,{self.team_id},CX,OFF")
+        #     self.xbee_device.close()
 
     def send_command(self, command):
         """
@@ -79,11 +84,73 @@ class TelemetryHandler:
             command (str): Command string following competition format.
         """
         print("Sending command:", command)
-        try:
-            if self.xbee_device.is_open():
-                self.xbee_device.send_data_broadcast(command.strip())
-        except Exception as e:
-            print(f"Error sending command: {e}")
+
+        if command == "CXON":
+            CXON = f"CMD,{self.team_id},CXON"
+            try:
+                if self.xbee_device.is_open():
+                    self.xbee_device.send_data_unicast(command.strip())
+            except Exception as e:
+                print(f"Error sending command: {e}")
+
+        elif command == "CXOFF":
+            CXOFF = f"CMD,{self.team_id},CXOFF"
+            try:
+                if self.xbee_device.is_open():
+                    self.xbee_device.send_data_unicast(command.strip())
+            except Exception as e:
+                print(f"Error sending command: {e}")
+        
+        elif command == "SIMULATION ENABLE":
+            ENABLE = f"CMD,{self.team_id},SIM,ENABLE"
+            try:
+                if self.xbee_device.is_open():
+                    self.xbee_device.send_data_unicast(command.strip())
+            except Exception as e:
+                print(f"Error sending command: {e}")
+
+        elif command == "SIMULATION ACTIVATE":
+            ACTIVATE = f"CMD,{self.team_id},SIM,ACTIVATE"
+            try:
+                if self.xbee_device.is_open() and self.sim_enable:
+                    self.xbee_device.send_data_unicast(command.strip())
+            except Exception as e:
+                print(f"Error sending command: {e}")
+        
+        elif command == "SIMULATION DISABLE":
+            DISABLE = f"CMD,{self.team_id},SIM,DISABLE"
+            try:
+                if self.xbee_device.is_open():
+                    self.xbee_device.send_data_unicast(command.strip())
+            except Exception as e:
+                print(f"Error sending command: {e}")
+
+        elif command == "CAL":
+            CAL = f"CMD,{self.team_id},CAL"
+            try:
+                if self.xbee_device.is_open():
+                    self.xbee_device.send_data_unicast(command.strip())
+            except Exception as e:
+                print(f"Error sending command: {e}")
+
+        elif command == "ST GPS":
+            ST_GPS = f"CMD,{self.team_id},ST,GPS"
+            try:
+                if self.xbee_device.is_open():
+                    self.xbee_device.send_data_unicast(command.strip())
+            except Exception as e:
+                print(f"Error sending command: {e}")
+
+        elif command == "ST":
+            current_time = datetime.now(timezone.utc).strftime('%H:%M:%S') # Get the current time in UTC
+            ST = f"CMD,{self.team_id},ST,{current_time}"
+            try:
+                if self.xbee_device.is_open():
+                    self.xbee_device.send_data_unicast(command.strip())
+            except Exception as e:
+                print(f"Error sending command: {e}")
+
+        # FIXME : Add any MEC commands here -------------------------------------------------------------------------------
 
     def _receive_telemetry(self):
         """Internal method to receive and process telemetry data."""
@@ -103,23 +170,19 @@ class TelemetryHandler:
 
                         # Update packet count
                         self.packet_count = int(data[2])
+
+                    if data[24] == "SIMULATION ENABLE":
+                        self.sim_enable = True
+
+                    elif data[24] == "SIMULATION ACTIVATE":
+                        self.sim_activate = True
+
+                    elif data[24] == "SIMULATION DISABLE":
+                        self.sim_activate = False
+                        self.sim_enable = False
+
             except Exception as e:
                 print(f"Error receiving telemetry: {e}")
-                self.is_receiving = False
-                break
-
-    def set_simulation_mode(self, enable=True):
-        """
-        Enable or disable simulation mode.
-
-        Args:
-            enable (bool): True to enable simulation mode, False to disable.
-        """
-        if enable:
-            self.send_command(f"CMD,{self.team_id},SIM,ENABLE")
-            self.send_command(f"CMD,{self.team_id},SIM,ACTIVATE")
-        else:
-            self.send_command(f"CMD,{self.team_id},SIM,DISABLE")
 
     def set_pressure(self, pressure):
         """
@@ -128,16 +191,21 @@ class TelemetryHandler:
         Args:
             pressure (int): Pressure in pascals.
         """
-        self.send_command(f"CMD,{self.team_id},SIMP,{pressure}")
+        # self.send_command(f"CMD,{self.team_id},SIMP,{pressure}")
 
-    def set_time(self, time_str=None):
+        self.is_receiving = True
+        self.receive_thread = Thread(target=self.send_command_pressure, args=("F:/sim.csv"))
+        self.receive_thread.start()
+
+    def send_command_pressure(self, csv_path):
         """
-        Set the mission time.
+        Send simulated pressure data (simulation mode only).
 
         Args:
-            time_str (str): Time in format hh:mm:ss, or None to use GPS time.
+            pressure (int): Pressure in pascals.
         """
-        if time_str:
-            self.send_command(f"CMD,{self.team_id},ST,{time_str}")
-        else:
-            self.send_command(f"CMD,{self.team_id},ST,GPS")
+        with open(csv_path, 'r') as csv_file:
+            csv_reader = csv.reader(csv_file)
+            for row in csv_reader:
+                self.send_command(f"CMD,{self.team_id},SIMP,{row[0]}")
+                time.sleep(1)

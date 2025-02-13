@@ -13,6 +13,7 @@ state = "LAUNCH_WAIT"
 mode = "S"
 cmd = "CXON"
 packet_count = 1
+path = "E:/CSVFile.csv"
 
 df = pd.DataFrame(np.empty((0, 25)))
 
@@ -51,9 +52,19 @@ df.loc[0] = [3174, # Team_ID                                            1
             random.randint(1, 3), # GPS_Sats                            24
             cmd] # CMD                                                  25
 
+if not (os.path.exists(path)):
+    df.to_csv(path, index=False)
+else:
+    packet_count = len(pd.read_csv(path))
+
 global last_packet
 last_packet = df.loc[0]
 while(packet_count <= 1000):
+    # print(f"Packet Count: {packet_count}")
+    if packet_count % 25 == 0:
+        time.sleep(10.0)
+        print("Waiting for 10 seconds")
+
     if state == "LAUNCH_WAIT":
         state = "ASCENT"
     else:
@@ -77,7 +88,7 @@ while(packet_count <= 1000):
     packet_count += 1
 
     start = time.perf_counter()
-    df.loc[len(df.index)] = [3174, # Team_ID
+    df.loc[0] = [3174, # Team_ID
                             datetime.now(timezone.utc).strftime('%H:%M:%S'), # Mission_Time in UTC
                             packet_count, # Packet_Count
                             mode, # Mode
@@ -102,13 +113,13 @@ while(packet_count <= 1000):
                             df.iloc[-1]["GPS_LONGITUDE"] + random.randint(1,5), # GPS_Longitude
                             random.randint(1, 3), # GPS_Sats
                             cmd] # CMD
-    # print(df)
+    
     last_packet = df.loc[len(df.index)-1]
-    time.sleep(1.0)
+    time.sleep(0.5)
 
-    df.to_csv("SimCSV.csv")
+    df.to_csv(path, mode='a', header=False, index=False)
     end = time.perf_counter()
     duration = round(end - start, 5)
     print(f'Time to push data: {duration} seconds')
 
-# os.remove("SimCSV.csv")
+
