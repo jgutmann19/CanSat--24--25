@@ -13,7 +13,7 @@ state = "LAUNCH_WAIT"
 mode = "S"
 cmd = "CXON"
 packet_count = 1
-path = "E:/CSVFile.csv"
+path = "SimCSV.csv"
 
 df = pd.DataFrame(np.empty((0, 25)))
 

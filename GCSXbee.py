@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 # os.environ["KUBECONFIG"] = os.path.abspath("kube_config.yaml")
 
 from digi.xbee.devices import XBeeDevice
-from xbee import ZigBee
 
 class TelemetryHandler:
     def __init__(self, team_id, port="COM3", baudrate=9600): # default port val for Fernando's laptop
@@ -60,6 +59,7 @@ class TelemetryHandler:
 
         # Start receiving data
         self.is_receiving = True
+        print("Starting telemetry thread...")
         self.receive_thread = Thread(target=self._receive_telemetry, daemon=True)
         self.receive_thread.start()
 
@@ -155,8 +155,11 @@ class TelemetryHandler:
     def _receive_telemetry(self):
         """Internal method to receive and process telemetry data."""
         while self.is_receiving:
+            # print("Receiving telemetry data...")
             try:
                 xbee_message = self.xbee_device.read_data()
+                # print("Received telemetry data...................")
+                # print(xbee_message)
                 if xbee_message:
                     # Read and decode the message
                     line = xbee_message.data.decode('utf-8').strip()
@@ -180,6 +183,8 @@ class TelemetryHandler:
                     elif data[24] == "SIMULATION DISABLE":
                         self.sim_activate = False
                         self.sim_enable = False
+
+                print("Received packet count:", self.packet_count)
 
             except Exception as e:
                 print(f"Error receiving telemetry: {e}")

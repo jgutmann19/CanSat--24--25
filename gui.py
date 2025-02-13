@@ -21,7 +21,7 @@ global curr_packet
 global last_packet
 global generate_new_packet
 global simulation_active
-path = "E:/CSVFile.csv"
+path = "SimCSVle.csv"
 previous_command = ""
 curr_packet = ""
 last_packet = ""
@@ -255,59 +255,59 @@ def update_everything():
 
 
 # FIXME : May replace this function with a bunch of IF statements in the normal functions (idk I need to sit down and figure this out) -------------------------------------------------------------------------------
-# def simulation_mode():
+def simulation_mode():
 
-    
+    pass
     # Set up multithreading to run the commands while still displaying the graphs
     # t = threading.Thread(target=telemetry_handler.send_command, args=(command)) # Will be added with the rest of the function
     # try:
     #     t.start()
     # except Exception as e:
-    #     print(f"Error sending command: {e}")    
+    #     print(f"Error sending command: {e}")
 
 # Function to send command
 def send_command():
     command = cmd_entry.get()
     global previous_command
 
-    # if (previous_command == "SIMULATION ENABLE" and command == "SIMULATION ACTIVATE"):
-    #     simulation_active = True
-    #     t = threading.Thread(target=telemetry_handler.set_simulation_mode, args=(True))
-    #     try:
-    #         t.start()
-    #     except Exception as e:
-    #         print(f"Error sending command: {e}")
+    if (previous_command == "SIMULATION ENABLE" and command == "SIMULATION ACTIVATE"):
+        simulation_active = True
+        t = threading.Thread(target=telemetry_handler.set_simulation_mode, args=(True))
+        try:
+            t.start()
+        except Exception as e:
+            print(f"Error sending command: {e}")
 
-    # elif command == "SIMULATION DISABLE":
-    #     simulation_active = False
-    #     t = threading.Thread(target=telemetry_handler.set_simulation_mode, args=(False))
-    #     try:
-    #         t.start()
-    #     except Exception as e:
-    #         print(f"Error sending command: {e}")
+    elif command == "SIMULATION DISABLE":
+        simulation_active = False
+        t = threading.Thread(target=telemetry_handler.set_simulation_mode, args=(False))
+        try:
+            t.start()
+        except Exception as e:
+            print(f"Error sending command: {e}")
 
-    # # This is because I can't be bothered to look for a nice way to close the window after forced fullscreen - Joel
-    # elif command in ["EXIT", "exit"]:
-    #     telemetry_handler.stop_telemetry()
-    #     quit()
+    # This is because I can't be bothered to look for a nice way to close the window after forced fullscreen - Joel
+    elif command in ["EXIT", "exit"]:
+        telemetry_handler.stop_telemetry()
+        root.destroy()
 
-    # if simulation_active:
-    #     simulation_mode()
+    if simulation_active:
+        simulation_mode()
 
-    # elif command == "SIMULATION ENABLE":
-    #     t = threading.Thread(target=telemetry_handler.send_command, args=(command))
-    #     try:
-    #         t.start()
-    #     except Exception as e:
-    #         print(f"Error sending command: {e}")
+    elif command == "SIMULATION ENABLE":
+        t = threading.Thread(target=telemetry_handler.send_command, args=(command))
+        try:
+            t.start()
+        except Exception as e:
+            print(f"Error sending command: {e}")
 
-    # else:
-    #     # Set up multithreading to run the commands while still displaying the graphs
-    #     t = threading.Thread(target=telemetry_handler.send_command, args=(command))
-    #     try:
-    #         t.start()
-    #     except Exception as e:
-    #         print(f"Error sending command: {e}")
+    else:
+        # Set up multithreading to run the commands while still displaying the graphs
+        t = threading.Thread(target=telemetry_handler.send_command, args=(command))
+        try:
+            t.start()
+        except Exception as e:
+            print(f"Error sending command: {e}")
 
     previous_command = curr_packet[24]
     cmd_entry.delete(0, tk.END)  # Clear the command entry field
@@ -454,3 +454,6 @@ update_mission_time()
 print("Starting GUI...")
 # Start the Tkinter event loop
 root.mainloop()
+
+exit()
+telemetry_handler.stop_telemetry()
