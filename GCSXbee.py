@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 # os.environ["KUBECONFIG"] = os.path.abspath("kube_config.yaml")
 
-from digi.xbee.devices import XBeeDevice
+from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice, XBee64BitAddress
 
 class TelemetryHandler:
     def __init__(self, team_id, port="COM3", baudrate=9600): # default port val for Fernando's laptop
@@ -40,10 +40,11 @@ class TelemetryHandler:
 
         # Initialize XBee connection
         self.xbee_device = XBeeDevice(port, baudrate)
+        self.receiver = RemoteXBeeDevice(x64bit_addr=XBee64BitAddress.from_hex_string("0013A2004182CD4E"), local_xbee=self.xbee_device)
+        # FIXME : This MAC address will need to be updated to the actual FSW radio's MAC address
+
         try:
-            print("Opening XBee device...")
             self.xbee_device.open()
-            print("XBee device opened successfully.")
         except Exception as e:
             raise Exception(f"Failed to open XBee device: {e}")
 
@@ -59,7 +60,6 @@ class TelemetryHandler:
 
         # Start receiving data
         self.is_receiving = True
-        print("Starting telemetry thread...")
         self.receive_thread = Thread(target=self._receive_telemetry, daemon=True)
         self.receive_thread.start()
 
@@ -83,111 +83,105 @@ class TelemetryHandler:
         Args:
             command (str): Command string following competition format.
         """
-        print("Sending command:", command)
 
         if command == "CXON":
             CXON = f"CMD,{self.team_id},CXON"
             try:
                 if self.xbee_device.is_open():
-                    self.xbee_device.send_data_unicast(command.strip())
+                    self.xbee_device.send_data_async(remote_xbee=self.receiver, data=CXON)
             except Exception as e:
-                print(f"Error sending command: {e}")
+                print(f"ERROR [COMMAND CXON]: Error sending command - {e}")
 
         elif command == "CXOFF":
             CXOFF = f"CMD,{self.team_id},CXOFF"
             try:
                 if self.xbee_device.is_open():
-                    self.xbee_device.send_data_unicast(command.strip())
+                    self.xbee_device.send_data_async(remote_xbee=self.receiver ,data=CXOFF)
             except Exception as e:
-                print(f"Error sending command: {e}")
+                print(f"ERROR [COMMAND CXOFF]: Error sending command - {e}")
         
         elif command == "SIMULATION ENABLE":
             ENABLE = f"CMD,{self.team_id},SIM,ENABLE"
             try:
                 if self.xbee_device.is_open():
-                    self.xbee_device.send_data_unicast(command.strip())
+                    self.xbee_device.send_data_async(remote_xbee=self.receiver, data=ENABLE)
             except Exception as e:
-                print(f"Error sending command: {e}")
+                print(f"ERROR [COMMAND SIM ENABLE]: Error sending command - {e}")
 
         elif command == "SIMULATION ACTIVATE":
             ACTIVATE = f"CMD,{self.team_id},SIM,ACTIVATE"
             try:
                 if self.xbee_device.is_open() and self.sim_enable:
-                    self.xbee_device.send_data_unicast(command.strip())
+                    self.xbee_device.send_data_async(remote_xbee=self.receiver, data=ACTIVATE)
             except Exception as e:
-                print(f"Error sending command: {e}")
+                print(f"ERROR [COMMAND SIM ACTIVATE]: Error sending command - {e}")
         
         elif command == "SIMULATION DISABLE":
             DISABLE = f"CMD,{self.team_id},SIM,DISABLE"
             try:
                 if self.xbee_device.is_open():
-                    self.xbee_device.send_data_unicast(command.strip())
+                    self.xbee_device.send_data_async(remote_xbee=self.receiver, data=DISABLE)
             except Exception as e:
-                print(f"Error sending command: {e}")
+                print(f"ERROR [COMMAND SIM DISABLE]: Error sending command - {e}")
 
         elif command == "CAL":
             CAL = f"CMD,{self.team_id},CAL"
             try:
                 if self.xbee_device.is_open():
-                    self.xbee_device.send_data_unicast(command.strip())
+                    self.xbee_device.send_data_async(remote_xbee=self.receiver, data=CAL)
             except Exception as e:
-                print(f"Error sending command: {e}")
+                print(f"ERROR [COMMAND CAL]: Error sending command - {e}")
 
         elif command == "ST GPS":
             ST_GPS = f"CMD,{self.team_id},ST,GPS"
             try:
                 if self.xbee_device.is_open():
-                    self.xbee_device.send_data_unicast(command.strip())
+                    self.xbee_device.send_data_async(remote_xbee=self.receiver, data=ST_GPS)
             except Exception as e:
-                print(f"Error sending command: {e}")
+                print(f"ERROR [COMMAND ST GPS]: Error sending command - {e}")
 
         elif command == "ST":
             current_time = datetime.now(timezone.utc).strftime('%H:%M:%S') # Get the current time in UTC
             ST = f"CMD,{self.team_id},ST,{current_time}"
             try:
                 if self.xbee_device.is_open():
-                    self.xbee_device.send_data_unicast(command.strip())
+                    self.xbee_device.send_data_async(remote_xbee=self.receiver, data=ST)
             except Exception as e:
-                print(f"Error sending command: {e}")
+                print(f"ERROR [COMMAND ST]: Error sending command - {e}")
 
         # FIXME : Add any MEC commands here -------------------------------------------------------------------------------
 
     def _receive_telemetry(self):
         """Internal method to receive and process telemetry data."""
         while self.is_receiving:
-            # print("Receiving telemetry data...")
             try:
-                xbee_message = self.xbee_device.read_data()
-                # print("Received telemetry data...................")
-                # print(xbee_message)
+                xbee_message = self.xbee_device.read_data(20)
                 if xbee_message:
                     # Read and decode the message
                     line = xbee_message.data.decode('utf-8').strip()
                     data = line.split(',')
 
                     # Validate team ID and basic data format
-                    if len(data) >= len(self.telemetry_fields) and data[0] == self.team_id:
+                    if (len(data) >= len(self.telemetry_fields)) and (data[0] == self.team_id):
                         # Write to CSV file
                         self.csv_writer.writerow(data)
                         self.csv_file.flush()  # Ensure data is written to disk
 
                         # Update packet count
-                        self.packet_count = int(data[2])
+                        self.packet_count += 1
 
-                    if data[24] == "SIMULATION ENABLE":
+                    if data[24] == "SIM ENABLE":
                         self.sim_enable = True
 
-                    elif data[24] == "SIMULATION ACTIVATE":
+                    elif data[24] == "SIM ACTIVATE":
                         self.sim_activate = True
 
-                    elif data[24] == "SIMULATION DISABLE":
+                    elif data[24] == "SIM DISABLE":
                         self.sim_activate = False
                         self.sim_enable = False
 
-                print("Received packet count:", self.packet_count)
-
             except Exception as e:
-                print(f"Error receiving telemetry: {e}")
+                print(f"ERROR [RECEIVE TELEMETRY] : {e}")
 
     def set_pressure(self, pressure):
         """

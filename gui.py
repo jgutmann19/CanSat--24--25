@@ -1,16 +1,17 @@
 import tkinter as tk
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
-from mpl_toolkits.mplot3d import Axes3D
-from datetime import datetime, timezone
 import csv
-import threading
 import GCSXbee
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.ticker import MaxNLocator
+from datetime import datetime, timezone
+from PIL import Image, ImageTk
+
 
 # Colors and Fonts for Blue and Orange Theme
 PRIMARY_COLOR = '#F0F0F0'   # Light gray
-TEXT_COLOR = '#DE9100'      # Orange
+TEXT_COLOR = '#FA4616'      # Gator Orange
+GATOR_BLUE = '#0021A5'      # Gator Blue
 FONT_TITLE = ("Verdana", 14, "bold")
 CMD_ECHO = ""  # Initialize CMD_ECHO with an empty string
 
@@ -21,10 +22,10 @@ global curr_packet
 global last_packet
 global generate_new_packet
 global simulation_active
-path = "SimCSVle.csv"
+path = "Flight_3174.csv"
 previous_command = ""
-curr_packet = ""
-last_packet = ""
+curr_packet = [0 for _ in range(26)]
+last_packet = [0 for _ in range(26)]
 generate_new_packet = True
 simulation_active = False
 
@@ -65,17 +66,34 @@ def collect_graph_data():
     # I'm going to keep the auto scrolling time values as it'll give a good point of reference on whether the packets are stalled
     for i in range(7):
         x_values[i] = x_values[i + 1]
-        # If we only want the last 8 seconds (packets) of flight data for the 3d plot, uncomment these lines and adjust
-        # the relevant "append" lines
+        # If we only want the last 8 seconds/packets of flight data for the 3d plot, uncomment these lines and adjust the relevant "append" lines
         # gyro_altitude_points[i] = gyro_altitude_points[i + 1]
         # gyro_latitude_points[i] = gyro_latitude_points[i + 1]
         # gyro_longitude_points[i] = gyro_longitude_points[i + 1]
 
-    x_values[7] = int(curr_packet[2])
-    # Currently tracks all GPS data for the 3D plot
-    gyro_altitude_points.append(int(curr_packet[20]))
-    gyro_latitude_points.append(int(curr_packet[21]))
-    gyro_longitude_points.append(int(curr_packet[22]))
+    try:
+        x_values[7] = int(curr_packet[2])
+        # Currently tracks all GPS data for the 3D plot
+        gyro_altitude_points.append(int(curr_packet[20]))
+        gyro_latitude_points.append(int(curr_packet[21]))
+        gyro_longitude_points.append(int(curr_packet[22]))
+
+        # Uncomment these lines for the 8 seconds/packets of 3d plot data
+        # gyro_altitude_points[7] = int(curr_packet[20])
+        # gyro_latitude_points[7] = int(curr_packet[21])
+        # gyro_longitude_points[7] = int(curr_packet[22])
+
+    except:
+        x_values[7] = int(last_packet[2])
+        # Currently tracks all GPS data for the 3D plot
+        gyro_altitude_points.append(int(last_packet[20]))
+        gyro_latitude_points.append(int(last_packet[21]))
+        gyro_longitude_points.append(int(last_packet[22]))
+
+        # Uncomment these lines for the 8 seconds/packets of 3d plot data
+        # gyro_altitude_points[7] = int(curr_packet[20])
+        # gyro_latitude_points[7] = int(curr_packet[21])
+        # gyro_longitude_points[7] = int(curr_packet[22])
 
     # Collect data from the latest packet for each field in the graphs_data dictionary
     for key in graphs_data:
@@ -84,49 +102,104 @@ def collect_graph_data():
             y_values[i] = y_values[i + 1]
 
         if key == "Altitude":
-            y_values[-1] = int(curr_packet[5])
+            try:
+                y_values[-1] = int(curr_packet[5])
+            except:
+                y_values[-1] = int(last_packet[5])
+
 
         elif key == "Temperature":
-            y_values[-1] = int(curr_packet[6])
+            try:
+                y_values[-1] = int(curr_packet[6])
+            except:
+                y_values[-1] = int(last_packet[6])
 
         elif key == "Pressure":
-            y_values[-1] = int(curr_packet[7])
+            try:
+                y_values[-1] = int(curr_packet[7])
+            except:
+                y_values[-1] = int(last_packet[7])
 
         elif key == "Voltage":
-            y_values[-1] = int(curr_packet[8])
+            try:
+                y_values[-1] = int(curr_packet[8])
+            except:
+                y_values[-1] = int(last_packet[8])
 
         elif key in ["Gyro_R", "Gyro_P", "Gyro_Y"]:
             if key == "Gyro_R":
-                y_values[-1] = int(curr_packet[9])
-            elif key == "Gyro_P":
-                y_values[-1] = int(curr_packet[10])
-            elif key == "Gyro_Y":
-                y_values[-1] = int(curr_packet[11])
+                try:
+                    y_values[-1] = int(curr_packet[9])
+                except:
+                    y_values[-1] = int(last_packet[9])
 
-        elif key == "Gyro_Rotation_Rate": #"Auto_Gyro_Rotation_Rate":
-            y_values[-1] = int(curr_packet[18])
+            elif key == "Gyro_P":
+                try:
+                    y_values[-1] = int(curr_packet[10])
+                except:
+                    y_values[-1] = int(last_packet[10])
+
+            elif key == "Gyro_Y":
+                try:
+                    y_values[-1] = int(curr_packet[11])
+                except:
+                    y_values[-1] = int(last_packet[11])
+
+        elif key == "Gyro_Rotation_Rate": # Also could be called "Auto_Gyro_Rotation_Rate" 
+            try:
+                y_values[-1] = int(curr_packet[18])
+            except:
+                y_values[-1] = int(last_packet[18])
 
         elif key in ["Accel_R", "Accel_P", "Accel_Y"]:
             if key == "Accel_R":
-                y_values[-1] = int(curr_packet[12])
+                try:
+                    y_values[-1] = int(curr_packet[12])
+                except:
+                    y_values[-1] = int(last_packet[12])
+
             elif key == "Accel_P":
-                y_values[-1] = int(curr_packet[13])
+                try:
+                    y_values[-1] = int(curr_packet[13])
+                except:
+                    y_values[-1] = int(last_packet[13])
+
             elif key == "Accel_Y":
-                y_values[-1] = int(curr_packet[14])
+                try:
+                    y_values[-1] = int(curr_packet[14])
+                except:
+                    y_values[-1] = int(last_packet[14])
 
         elif key in ["Mag_R", "Mag_P", "Mag_Y"]:
             if key == "Mag_R":
-                y_values[-1] = int(curr_packet[15])
+                try:
+                    y_values[-1] = int(curr_packet[15])
+                except:
+                    y_values[-1] = int(last_packet[15])
+
             elif key == "Mag_P":
-                y_values[-1] = int(curr_packet[16])
+                try:
+                    y_values[-1] = int(curr_packet[16])
+                except:
+                    y_values[-1] = int(last_packet[16])
+
             elif key == "Mag_Y":
-                y_values[-1] = int(curr_packet[17])
+                try:
+                    y_values[-1] = int(curr_packet[17])
+                except:
+                    y_values[-1] = int(last_packet[17])
 
         elif key == "GPS_Altitude":
-            y_values[-1] = int(curr_packet[20])
+            try:
+                y_values[-1] = int(curr_packet[20])
+            except:
+                y_values[-1] = int(last_packet[20])
 
         elif key == "GPS_Sats":
-            y_values[-1] = int(curr_packet[23])
+            try:
+                y_values[-1] = int(curr_packet[23])
+            except:
+                y_values[-1] = int(last_packet[23])
 
         graphs_data[key] = (x_values, y_values) # Update the dictionary with the new values
 
@@ -155,7 +228,7 @@ def plot_all_graphs(fig_func, axs_func):
         ax.xaxis.set_major_locator(MaxNLocator(nbins=4))
 
         # Add title, axis labels, and other formatting
-        ax.set_title(graph_title, weight='bold', color='darkblue', fontname='Verdana')
+        ax.set_title(graph_title, weight='bold', color=GATOR_BLUE, fontname='Verdana')
         ax.set_xlabel('Packets', fontname='Verdana')
         ax.set_ylabel('Y Axis', fontname='Verdana')
         ax.grid(True, linestyle='--', alpha=0.6)
@@ -182,12 +255,9 @@ def plot_all_graphs(fig_func, axs_func):
         elif graph_title == "GPS_Sats":
             ax.set_ylabel('GPS Satellites', fontname='Verdana')
 
-    print("Post IF statement")
     # Adjust layout to prevent overlap
     plt.subplots_adjust(hspace=1.0, wspace=1.4)  # Adjust space between subplots
-    print("Post subplots_adjust")
     canvas.draw()  # Redraw the canvas
-    print("Post canvas.draw()")
 
 # Like the previous function but just for the 3D plot for some separation
 def plot_3d_graphs(fig_3d_func, axs_3d_func):
@@ -195,10 +265,10 @@ def plot_3d_graphs(fig_3d_func, axs_3d_func):
 
     axs_3d_func.clear() # Clear out the plot for new data
     axs_3d_func.set_title('GPS Position') # Plot title
-    axs_3d_func.set_xlabel('GPS Latitude') # Rename the axis, mostly sure they are on the correct axis
+    axs_3d_func.set_xlabel('GPS Latitude') # Rename the axis, mostly sure they are on the correct axis will need to check at some point
     axs_3d_func.set_ylabel('GPS Longitude')
     axs_3d_func.set_zlabel('GPS Altitude')
-    axs_3d_func.plot(gyro_latitude_points, gyro_longitude_points, gyro_altitude_points, color='darkblue')
+    axs_3d_func.plot(gyro_latitude_points, gyro_longitude_points, gyro_altitude_points, color=GATOR_BLUE)
     fig_3d_func.patch.set_facecolor('#F0F0F0')
     canvas_3d.draw()
 
@@ -211,8 +281,8 @@ def update_mission_time():
 # Function to refresh all displayed variables with new data every second (1 Hz)
 def update_everything():
     global updating_graphs, curr_packet, packet_counter, previous_command
+
     get_last_csv_row(path) # Get the last row in the csv
-    print("Post csv")
     try:
         current_time = "GPS Time: " + str(curr_packet[19]) # First attempt to get the latest GPS time
     except:
@@ -227,13 +297,23 @@ def update_everything():
     # received not how many packets have been sent as is represented in the telemetry packet - Joel
 
 
-    packet_count_label.config(text=f"Packet Count: {curr_packet[2]}")
-    team_id_label.config(text=f"Team ID: {curr_packet[0]}")
-    mode_label.config(text=f"Mode: {curr_packet[3]}")
-    state_label.config(text=f"State: {curr_packet[4]}")
-    cmd_echo_label.config(text=f"Command Echo: {curr_packet[24]}")
+    try:
+        packet_count_label.config(text=f"Packet Count: {telemetry_handler.packet_count}")
+        team_id_label.config(text=f"Team ID: {curr_packet[0]}")
+        mode_label.config(text=f"Mode: {curr_packet[3]}")
+        state_label.config(text=f"State: {curr_packet[4]}")
+        cmd_echo_label.config(text=f"Command Echo: {curr_packet[24]}")
+        sim_enable_label.config(text=f"Sim Enable: {telemetry_handler.sim_enable}")
+        sim_active_label.config(text=f"Sim Active: {telemetry_handler.sim_activate}")
+    except:
+        packet_count_label.config(text=f"Packet Count: {telemetry_handler.packet_count}")
+        team_id_label.config(text=f"Team ID: {last_packet[0]}")
+        mode_label.config(text=f"Mode: {last_packet[3]}")
+        state_label.config(text=f"State: {last_packet[4]}")
+        cmd_echo_label.config(text=f"Command Echo: {last_packet[24]}")
+        sim_enable_label.config(text=f"Sim Enable: {telemetry_handler.sim_enable}")
+        sim_active_label.config(text=f"Sim Active: {telemetry_handler.sim_activate}")
 
-    print("IF statement")
 
     # if telemetry_handler.sim_enable and not telemetry_handler.sim_activate:
     #     simulation_label.config(text="Simulation Mode: ENABLED")
@@ -246,11 +326,9 @@ def update_everything():
         updating_graphs = True
         collect_graph_data()  # Generate new random dataf
         plot_all_graphs(fig, axs)  # Update the existing figure and axes
-        print("Post collect")
         plot_3d_graphs(fig_3d, axs_3d) # Update the 3D figure and axes
         updating_graphs = False
     
-    print("Post IF statement")
     root.after(50, update_everything) # Because the packets come in at 1Hz, update the graphs ASAP after the new packet is received
 
 
@@ -268,48 +346,33 @@ def simulation_mode():
 # Function to send command
 def send_command():
     command = cmd_entry.get()
-    global previous_command
+    global previous_command, simulation_active
 
-    if (previous_command == "SIMULATION ENABLE" and command == "SIMULATION ACTIVATE"):
-        simulation_active = True
-        t = threading.Thread(target=telemetry_handler.set_simulation_mode, args=(True))
-        try:
-            t.start()
-        except Exception as e:
-            print(f"Error sending command: {e}")
-
-    elif command == "SIMULATION DISABLE":
-        simulation_active = False
-        t = threading.Thread(target=telemetry_handler.set_simulation_mode, args=(False))
-        try:
-            t.start()
-        except Exception as e:
-            print(f"Error sending command: {e}")
-
-    # This is because I can't be bothered to look for a nice way to close the window after forced fullscreen - Joel
-    elif command in ["EXIT", "exit"]:
+    if command in ["EXIT", "exit"]:
         telemetry_handler.stop_telemetry()
         root.destroy()
-
-    if simulation_active:
-        simulation_mode()
-
-    elif command == "SIMULATION ENABLE":
-        t = threading.Thread(target=telemetry_handler.send_command, args=(command))
+    
+    elif command != "":
         try:
-            t.start()
+            telemetry_handler.send_command(command)
         except Exception as e:
-            print(f"Error sending command: {e}")
+            print(f"ERROR [SEND COMMAND] : Error sending command {e}")
 
+        # This is because I can't be bothered to look for a nice way to close the window after forced fullscreen - Joel
+
+    if telemetry_handler.sim_enable:
+        if telemetry_handler.sim_activate:
+            simulation_active = True
+        else:
+            simulation_active = False
     else:
-        # Set up multithreading to run the commands while still displaying the graphs
-        t = threading.Thread(target=telemetry_handler.send_command, args=(command))
-        try:
-            t.start()
-        except Exception as e:
-            print(f"Error sending command: {e}")
+        simulation_active = False
 
-    previous_command = curr_packet[24]
+    try:
+        previous_command = curr_packet[24]
+    except:
+        previous_command = ""
+
     cmd_entry.delete(0, tk.END)  # Clear the command entry field
 
 # Gather the latest packet of data using the csv as a middle man
@@ -321,24 +384,30 @@ def get_last_csv_row(filename):
     # received not how many packets have been sent as is represented in the telemetry packet - Joel
 
     global curr_packet, last_packet, packet_counter, generate_new_packet
-    last_packet = curr_packet
+    if curr_packet != '' and curr_packet != None:
+        last_packet = curr_packet
     if generate_new_packet and not updating_graphs: # ensure that the graphs are in a stable state and not currently collecting a packet
-        generate_new_packet = False
+        generate_new_packet = False 
         try: # Always have this when doing anything with a file, should only ever be 'read' in this program
             with open(filename, 'r') as file:
                 open_csv = csv.reader(file)
                 last_row = None
                 for row in open_csv: # Only need the latest packet in the csv
                     last_row = row
-                curr_packet = last_row
+                if curr_packet != '':
+                    curr_packet = last_row
+                else:
+                    curr_packet = [0 for _ in range(26)]
+                    last_packet = curr_packet
         except: # Just incase the CSV has not been created yet or is not read correctly
-            curr_packet = [0 for _ in range(25)]
+            curr_packet = [0 for _ in range(26)]
+            last_packet = curr_packet
 
         generate_new_packet = True
 
 # Create the main window
 root = tk.Tk()
-root.title("14 Graph Plotter - Blue & Orange Theme")
+root.title("SSDC 2025 Ground Control System")
 # root.geometry("1000x700")  # Set a fixed window size (Changed to forced fullscreen)
 root.configure(bg=PRIMARY_COLOR)
 
@@ -371,14 +440,15 @@ canvas_3d = FigureCanvasTkAgg(fig_3d, master=root)
 
 # Ensure the figure canvas stretches dynamically
 canvas.get_tk_widget().grid(row=3, column=0, columnspan=4, sticky="nsew")
-canvas_3d.get_tk_widget().grid(row=3, column=9, sticky='nsew')
+canvas_3d.get_tk_widget().grid(row=3, column=6, sticky='nsew')
+# fig_3d.grid----------------------------------------------------------------------------------------------------
 
 # Set the main window to resize dynamically
 root.grid_columnconfigure(0, weight=1)
 root.grid_rowconfigure(1, weight=1)
 
 # Make the other rows and columns dynamically resizable
-for col in range(9):  # Total number of columns used in the grid
+for col in range(6):  # Total number of columns used in the grid
     root.grid_columnconfigure(col, weight=1)
 root.grid_rowconfigure(0, weight=0)  # Static labels row
 root.grid_rowconfigure(1, weight=0)  # More labels
@@ -393,7 +463,7 @@ cmd_frame.grid_columnconfigure(0, weight=1)  # Left spacer
 cmd_frame.grid_columnconfigure(1, weight=0)  # CMD label
 cmd_frame.grid_columnconfigure(2, weight=0, minsize=3)  # CMD entry
 cmd_frame.grid_columnconfigure(3, weight=0)  # Send button
-cmd_frame.grid_columnconfigure(4, weight=1)  # Sim state label
+cmd_frame.grid_columnconfigure(4, weight=1)  # Right Buffer
 
 # Create a label for command echo
 cmd_echo_label = tk.Label(cmd_frame, text=f"Command Echo: {CMD_ECHO}", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR)
@@ -401,9 +471,9 @@ cmd_echo_label.grid(row=0, column=0, padx=5)
 
 # Add CMD label, entry, and button to the frame
 cmd_label = tk.Label(cmd_frame, text="Command:", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR)
-cmd_label.grid(row=0, column=1, padx=(0, 5), sticky="e")
+cmd_label.grid(row=0, column=1, padx=(0, 5))
 
-cmd_entry = tk.Entry(cmd_frame, font=FONT_TITLE, width=30)
+cmd_entry = tk.Entry(cmd_frame, font=FONT_TITLE, width=20)
 cmd_entry.grid(row=0, column=2, padx=10)
 
 send_button = tk.Button(cmd_frame, text="Send", font=FONT_TITLE, command=send_command)
@@ -433,25 +503,34 @@ mode_label.grid(row=0, column=3, padx=5, pady=5)
 state_label = tk.Label(root, text="State: OK", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR)
 state_label.grid(row=1, column=1, padx=5, pady=5)
 
+# Create Labels for Simulation States
+sim_enable_label = tk.Label(root, text="Sim Enable: False", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR)
+sim_enable_label.grid(row=1, column=2, padx=5, pady=5)
+sim_active_label = tk.Label(root, text="Sim Active: False", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR)
+sim_active_label.grid(row=1, column=3, padx=5, pady=5)
+
 # Create GPS time label
 gps_time_label = tk.Label(root, text="--:--:--", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR)
 gps_time_label.grid(row=1, column=0, padx=5)
 
-# Create a telemetry handler object
-telemetry_handler = GCSXbee.TelemetryHandler("3174", "COM4")
-print("Telemetry handler created")
-telemetry_handler.start_telemetry()
-print("Telemetry handler started")
+# Load UF and SSDC Images
+gators = Image.open("Images/Gators Logo.png")
+gators = gators.resize((238,228))
+gators_image = ImageTk.PhotoImage(gators)
+gators_image_label = tk.Label(root, image=gators_image)
+gators_image_label.image = gators_image
+gators_image_label.grid(row=0, column=6, columnspan=1, padx=5, pady=5)
 
-print("Starting update everything...")
+# Create a telemetry handler object
+telemetry_handler = GCSXbee.TelemetryHandler("3174", "COM6")
+telemetry_handler.start_telemetry()
+
 # Start updating graphs every second
 update_everything()
 
-print("Starting mission time...")
 # Start the real-time mission time update
 update_mission_time()
 
-print("Starting GUI...")
 # Start the Tkinter event loop
 root.mainloop()
 
