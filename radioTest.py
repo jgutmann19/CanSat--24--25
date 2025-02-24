@@ -3,6 +3,7 @@ from threading import Thread
 from datetime import datetime
 from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice, XBee64BitAddress
 import random
+import csv
 
 
 fields = ["TEAM_ID","MISSION_TIME","PACKET_COUNT","MODE","STATE","ALTITUDE","TEMPERATURE", "PRESSURE", "VOLTAGE",
@@ -126,6 +127,7 @@ while num_sends < 1000:
             random.randint(1, 3), # GPS_Sats                23
             cmd] # CMD                                      24
 
+    print(num_sends)
     xbee_device.send_data_async(remote_xbee=receiver ,data=f"3174,{message[1]},{num_sends},{message[3]},{message[4]},{message[5]},{message[6]},{message[7]},{message[8]},{message[9]},{message[10]},{message[11]},{message[12]},{message[13]},{message[14]},{message[15]},{message[16]},{message[17]},{message[18]},{message[19]},{message[20]},{message[21]},{message[22]},{message[23]},{message[24]}")
 
     num_sends += 1
