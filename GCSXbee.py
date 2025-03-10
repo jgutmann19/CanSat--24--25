@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice, XBee64BitAddress
 
 class TelemetryHandler:
-    def __init__(self, team_id, port="COM3", baudrate=9600): # default port val for Fernando's laptop
+    def __init__(self, team_id, port="COM3", baudrate=9600, path=None): # default port val for Fernando's laptop
         """
         Initialize the telemetry handler.
 
@@ -25,7 +25,10 @@ class TelemetryHandler:
         self.packet_count = 0
         self.sim_enable = False
         self.sim_activate = False
-
+        self.filepath = path
+        if self.filepath == None:
+            raise Exception(f"GCSXbee [INTIALIZATION] : No file path given")
+        
         # Define telemetry fields as per competition requirements
         self.telemetry_fields = [
             'TEAM_ID', 'MISSION_TIME', 'PACKET_COUNT', 'MODE', 'STATE',
@@ -46,13 +49,12 @@ class TelemetryHandler:
         try:
             self.xbee_device.open()
         except Exception as e:
-            raise Exception(f"Failed to open XBee device: {e}")
+            raise Exception(f"GCSXbee [INITIALIZATION] Failed to open XBee device: {e}")
 
     def start_telemetry(self):
         """Start receiving telemetry data."""
         # Create CSV file with specified naming format
-        filename = f"Flight_{self.team_id}.csv"
-        self.csv_file = open(filename, 'w', newline='')
+        self.csv_file = open(self.filepath, 'w', newline='')
         self.csv_writer = csv.writer(self.csv_file)
 
         # Write header row
