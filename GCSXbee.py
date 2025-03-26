@@ -42,8 +42,9 @@ class TelemetryHandler:
         ]
 
         # Initialize XBee connection
+        MAC_ADDRESS = "0013A20041E060D2" # This is the MAC address of the FSW radio (the one on the Sat)
         self.xbee_device = XBeeDevice(port, baudrate)
-        self.receiver = RemoteXBeeDevice(x64bit_addr=XBee64BitAddress.from_hex_string("0013A20041E060D2"), local_xbee=self.xbee_device)
+        self.receiver = RemoteXBeeDevice(x64bit_addr=XBee64BitAddress.from_hex_string(MAC_ADDRESS), local_xbee=self.xbee_device)
         # FIXME : This MAC address will need to be updated to the actual FSW radio's MAC address
 
         try:
