@@ -553,7 +553,7 @@ ssdc_image_label.image = ssdc_image
 ssdc_image_label.grid(row=1, column=6, columnspan=1, padx=5, pady=5)
 
 # Create a telemetry handler object
-telemetry_handler = GCSXbee.TelemetryHandler("3174", port="COM6", baudrate=115200,path=path)
+telemetry_handler = GCSXbee.TelemetryHandler("3174", port="COM8", baudrate=115200,path=path)
 telemetry_handler.start_telemetry()
 
 # Start updating graphs every second

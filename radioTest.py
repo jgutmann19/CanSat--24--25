@@ -75,8 +75,8 @@ else:
     
 
 
-xbee_device = XBeeDevice("COM5", 115200)
-receiver = RemoteXBeeDevice(x64bit_addr=XBee64BitAddress.from_hex_string("0013A2004182CD94"), local_xbee=xbee_device)
+xbee_device = XBeeDevice("COM4", 115200)
+receiver = RemoteXBeeDevice(x64bit_addr=XBee64BitAddress.from_hex_string("0013A20041E060DA"), local_xbee=xbee_device)
 try:
     xbee_device.open()
 except:

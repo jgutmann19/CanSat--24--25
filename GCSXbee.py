@@ -43,7 +43,7 @@ class TelemetryHandler:
 
         # Initialize XBee connection
         self.xbee_device = XBeeDevice(port, baudrate)
-        self.receiver = RemoteXBeeDevice(x64bit_addr=XBee64BitAddress.from_hex_string("0013A2004182CD4E"), local_xbee=self.xbee_device)
+        self.receiver = RemoteXBeeDevice(x64bit_addr=XBee64BitAddress.from_hex_string("0013A20041E060D2"), local_xbee=self.xbee_device)
         # FIXME : This MAC address will need to be updated to the actual FSW radio's MAC address
 
         try:
@@ -86,16 +86,16 @@ class TelemetryHandler:
             command (str): Command string following competition format.
         """
 
-        if command == "CXON":
-            CXON = f"CMD,{self.team_id},CXON"
+        if command == "CX ON":
+            CXON = f"CMD,{self.team_id},CX,ON"
             try:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=CXON)
             except Exception as e:
                 print(f"ERROR [COMMAND CXON]: Error sending command - {e}")
 
-        elif command == "CXOFF":
-            CXOFF = f"CMD,{self.team_id},CXOFF"
+        elif command == "CX OFF":
+            CXOFF = f"CMD,{self.team_id},CX,OFF"
             try:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver ,data=CXOFF)
@@ -142,9 +142,24 @@ class TelemetryHandler:
             except Exception as e:
                 print(f"ERROR [COMMAND ST GPS]: Error sending command - {e}")
 
-        elif command == "ST":
-            current_time = datetime.now(timezone.utc).strftime('%H:%M:%S') # Get the current time in UTC
+        elif command[0:2] == "ST":
+            current_time = "00:00:00"
+            try:
+                current_time = command[3:]
+                if current_time == "":
+                    current_time = datetime.now(timezone.utc).strftime('%H:%M:%S')
+                elif current_time.count(":") != 2:
+                    current_time = datetime.now(timezone.utc).strftime('%H:%M:%S')
+                elif current_time[2] != ":" or current_time[5] != ":":
+                    current_time = datetime.now(timezone.utc).strftime('%H:%M:%S')
+                elif len(current_time) != 8:
+                    current_time = datetime.now(timezone.utc).strftime('%H:%M:%S')
+            
+            except:
+                current_time = datetime.now(timezone.utc).strftime('%H:%M:%S') # Get the current time in UTC
+                print(current_time)
             ST = f"CMD,{self.team_id},ST,{current_time}"
+            print(ST)
             try:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=ST)
@@ -172,6 +187,7 @@ class TelemetryHandler:
                         # Update packet count
                         self.packet_count += 1
 
+                    # FIXME : This may need to be updated to handle the format that FSW sends us -------------------------
                     if data[24] == "SIM ENABLE":
                         self.sim_enable = True
 
