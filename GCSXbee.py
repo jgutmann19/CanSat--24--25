@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice, XBee64BitAddress
 
 class TelemetryHandler:
-    def __init__(self, team_id, port="COM3", baudrate=9600): # default port val for Fernando's laptop
+    def __init__(self, team_id, port="COM3", baudrate=9600, path=None): # default port val for Fernando's laptop
         """
         Initialize the telemetry handler.
 
@@ -25,7 +25,11 @@ class TelemetryHandler:
         self.packet_count = 0
         self.sim_enable = False
         self.sim_activate = False
-
+        self.SIM_CSV_PATH = "E:/simulated_data.csv"
+        self.filepath = path
+        if self.filepath == None:
+            raise Exception(f"GCSXbee [INTIALIZATION] : No file path given")
+        
         # Define telemetry fields as per competition requirements
         self.telemetry_fields = [
             'TEAM_ID', 'MISSION_TIME', 'PACKET_COUNT', 'MODE', 'STATE',
@@ -39,20 +43,19 @@ class TelemetryHandler:
         ]
 
         # Initialize XBee connection
+        MAC_ADDRESS = "0013A20041E060D2" # This is the MAC address of the FSW radio (the one on the Sat)
         self.xbee_device = XBeeDevice(port, baudrate)
-        self.receiver = RemoteXBeeDevice(x64bit_addr=XBee64BitAddress.from_hex_string("0013A2004182CD4E"), local_xbee=self.xbee_device)
+        self.receiver = RemoteXBeeDevice(x64bit_addr=XBee64BitAddress.from_hex_string(MAC_ADDRESS), local_xbee=self.xbee_device)
         # FIXME : This MAC address will need to be updated to the actual FSW radio's MAC address
-
-        try:
-            self.xbee_device.open()
-        except Exception as e:
-            raise Exception(f"Failed to open XBee device: {e}")
 
     def start_telemetry(self):
         """Start receiving telemetry data."""
+        try:
+            self.xbee_device.open()
+        except Exception as e:
+            raise Exception(f"GCSXbee [START TELEMETRY] Failed to open XBee device: {e}")
         # Create CSV file with specified naming format
-        filename = f"Flight_{self.team_id}.csv"
-        self.csv_file = open(filename, 'w', newline='')
+        self.csv_file = open(self.filepath, 'w', newline='')
         self.csv_writer = csv.writer(self.csv_file)
 
         # Write header row
@@ -84,16 +87,16 @@ class TelemetryHandler:
             command (str): Command string following competition format.
         """
 
-        if command == "CXON":
-            CXON = f"CMD,{self.team_id},CXON"
+        if command == "CX ON":
+            CXON = f"CMD,{self.team_id},CX,ON"
             try:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=CXON)
             except Exception as e:
                 print(f"ERROR [COMMAND CXON]: Error sending command - {e}")
 
-        elif command == "CXOFF":
-            CXOFF = f"CMD,{self.team_id},CXOFF"
+        elif command == "CX OFF":
+            CXOFF = f"CMD,{self.team_id},CX,OFF"
             try:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver ,data=CXOFF)
@@ -140,9 +143,24 @@ class TelemetryHandler:
             except Exception as e:
                 print(f"ERROR [COMMAND ST GPS]: Error sending command - {e}")
 
-        elif command == "ST":
-            current_time = datetime.now(timezone.utc).strftime('%H:%M:%S') # Get the current time in UTC
+        elif command[0:2] == "ST":
+            current_time = "00:00:00"
+            try:
+                current_time = command[3:]
+                if current_time == "":
+                    current_time = datetime.now(timezone.utc).strftime('%H:%M:%S')
+                elif current_time.count(":") != 2:
+                    current_time = datetime.now(timezone.utc).strftime('%H:%M:%S')
+                elif current_time[2] != ":" or current_time[5] != ":":
+                    current_time = datetime.now(timezone.utc).strftime('%H:%M:%S')
+                elif len(current_time) != 8:
+                    current_time = datetime.now(timezone.utc).strftime('%H:%M:%S')
+            
+            except:
+                current_time = datetime.now(timezone.utc).strftime('%H:%M:%S') # Get the current time in UTC
+                print(current_time)
             ST = f"CMD,{self.team_id},ST,{current_time}"
+            print(ST)
             try:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=ST)
@@ -170,11 +188,13 @@ class TelemetryHandler:
                         # Update packet count
                         self.packet_count += 1
 
+                    # FIXME : This may need to be updated to handle the format that FSW sends us -------------------------
                     if data[24] == "SIM ENABLE":
                         self.sim_enable = True
 
                     elif data[24] == "SIM ACTIVATE":
                         self.sim_activate = True
+                        
 
                     elif data[24] == "SIM DISABLE":
                         self.sim_activate = False
@@ -183,7 +203,7 @@ class TelemetryHandler:
             except Exception as e:
                 print(f"ERROR [RECEIVE TELEMETRY] : {e}")
 
-    def set_pressure(self, pressure):
+    def start_sim(self, pressure):
         """
         Send simulated pressure data (simulation mode only).
 
@@ -192,11 +212,11 @@ class TelemetryHandler:
         """
         # self.send_command(f"CMD,{self.team_id},SIMP,{pressure}")
 
-        self.is_receiving = True
-        self.receive_thread = Thread(target=self.send_command_pressure, args=("F:/sim.csv"))
-        self.receive_thread.start()
+        if (self.sim_enable and self.sim_activate):
+            self.simulation_thread = Thread(target=self._send_command_pressure, args=(self.SIM_CSV_PATH))
+            self.simulation_thread.start()
 
-    def send_command_pressure(self, csv_path):
+    def _send_command_pressure(self, csv_path):
         """
         Send simulated pressure data (simulation mode only).
 

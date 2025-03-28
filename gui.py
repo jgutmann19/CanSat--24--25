@@ -4,6 +4,7 @@ import GCSXbee
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.ticker import MaxNLocator
+from matplotlib.patheffects import withStroke
 from datetime import datetime, timezone
 from PIL import Image, ImageTk
 
@@ -11,7 +12,7 @@ from PIL import Image, ImageTk
 # Colors and Fonts for Blue and Orange Theme
 PRIMARY_COLOR = '#F0F0F0'   # Light gray
 TEXT_COLOR = '#FA4616'      # Gator Orange
-GATOR_BLUE = '#0021A5'      # Gator Blue
+GATOR_BLUE = "#0021A5"      # Gator Blue
 FONT_TITLE = ("Verdana", 14, "bold")
 CMD_ECHO = ""  # Initialize CMD_ECHO with an empty string
 
@@ -29,8 +30,16 @@ last_packet = [0 for _ in range(26)]
 generate_new_packet = True
 simulation_active = False
 
-# 14 point min text font
+# Default values and colors for different aspects of the graphs
 plt.rcParams.update({'font.size': 14})  # Set default font size for plots
+plt.rcParams['text.color'] = GATOR_BLUE  # Set default text color for plots
+plt.rcParams['font.family'] = 'Verdana'  # Set default font family for plots
+plt.rcParams['axes.labelcolor'] = GATOR_BLUE  # Set default axes label color for plots
+plt.rcParams['axes.titleweight'] = 'bold'  # Set default font weight for plots
+
+plt.rcParams['axes3d.xaxis.panecolor'] = 'white'
+plt.rcParams['axes3d.yaxis.panecolor'] = 'white'
+plt.rcParams['axes3d.zaxis.panecolor'] = 'white'
 
 # Sample Data for Graphs with specified names
 x_values = [-7, -6, -5, -4, -3, -2, -1, 0]  # 8 x-values
@@ -269,7 +278,10 @@ def plot_3d_graphs(fig_3d_func, axs_3d_func):
     axs_3d_func.set_ylabel('GPS Longitude')
     axs_3d_func.set_zlabel('GPS Altitude')
     axs_3d_func.plot(gyro_latitude_points, gyro_longitude_points, gyro_altitude_points, color=GATOR_BLUE)
-    fig_3d_func.patch.set_facecolor('#F0F0F0')
+    fig_3d_func.patch.set_facecolor(PRIMARY_COLOR)
+    # fig_3d.patch.set_color(PRIMARY_COLOR)
+    # fig_3d.patch.set_edgecolor(PRIMARY_COLOR)
+    # fig_3d.set_edgecolor(PRIMARY_COLOR)
     canvas_3d.draw()
 
 # Function to update the mission time dynamically
@@ -351,6 +363,7 @@ def send_command():
     if command in ["EXIT", "exit"]:
         telemetry_handler.stop_telemetry()
         root.destroy()
+        quit()
     
     elif command != "":
         try:
@@ -424,18 +437,30 @@ updating_graphs = False
 
 # Create a figure and axes for the plots
 fig, axs = plt.subplots(4, 4, figsize=(20, 15), dpi=80, constrained_layout=True)  # 16 graphs in a 4x4 grid
-fig.patch.set_facecolor('#F0F0F0')  # Light gray background
+fig.patch.set_facecolor(PRIMARY_COLOR)  # Light gray background
 canvas = FigureCanvasTkAgg(fig, master=root)
 
 # Create 3D graph
+
+font = {'family': 'Verdana',
+        'color':  GATOR_BLUE,
+        'weight': 'normal',
+        'size': 14,
+        }
+
 fig_3d = plt.figure()
 axs_3d = fig_3d.add_subplot(projection='3d') # Designates the axes as a 3d plot
-axs_3d.set_title('GPS Position') # Plot title
+axs_3d.set_title('GPS Position', fontweight='bold') # Plot title
 axs_3d.set_xlabel('GPS Latitude') # X-axis
 axs_3d.set_ylabel('GPS Longitude') # Y-axis
 axs_3d.set_zlabel('GPS Altitude') # Z-axis
+axs_3d.set_facecolor(PRIMARY_COLOR)
+
 axs_3d.plot(gyro_latitude_points, gyro_longitude_points, gyro_altitude_points) # X Y Z
-fig_3d.patch.set_facecolor('#F0F0F0') # Light gray background
+fig_3d.patch.set_facecolor(PRIMARY_COLOR) # Light gray background
+# fig_3d.patch.set_color(PRIMARY_COLOR)
+# fig_3d.patch.set_edgecolor(PRIMARY_COLOR)
+# fig_3d.set_edgecolor(PRIMARY_COLOR)
 canvas_3d = FigureCanvasTkAgg(fig_3d, master=root)
 
 # Ensure the figure canvas stretches dynamically
@@ -521,9 +546,21 @@ gators_image_label = tk.Label(root, image=gators_image)
 gators_image_label.image = gators_image
 gators_image_label.grid(row=0, column=6, columnspan=1, padx=5, pady=5)
 
+ssdc = Image.open("Images/SSDC Logo.png")
+ssdc = ssdc.resize((200,200))
+ssdc_image = ImageTk.PhotoImage(ssdc)
+ssdc_image_label = tk.Label(root,image=ssdc_image)
+ssdc_image_label.image = ssdc_image
+ssdc_image_label.grid(row=1, column=6, columnspan=1, padx=5, pady=5)
+
 # Create a telemetry handler object
-telemetry_handler = GCSXbee.TelemetryHandler("3174", "COM6")
-telemetry_handler.start_telemetry()
+telemetry_handler = None
+try:
+    telemetry_handler = GCSXbee.TelemetryHandler("3174", port="COM8", baudrate=115200,path=path)
+    telemetry_handler.start_telemetry()
+except Exception as e:
+    print(e)
+    # quit()
 
 # Start updating graphs every second
 update_everything()
