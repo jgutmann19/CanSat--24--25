@@ -25,6 +25,7 @@ class TelemetryHandler:
         self.packet_count = 0
         self.sim_enable = False
         self.sim_activate = False
+        self.SIM_CSV_PATH = "E:/simulated_data.csv"
         self.filepath = path
         if self.filepath == None:
             raise Exception(f"GCSXbee [INTIALIZATION] : No file path given")
@@ -47,13 +48,12 @@ class TelemetryHandler:
         self.receiver = RemoteXBeeDevice(x64bit_addr=XBee64BitAddress.from_hex_string(MAC_ADDRESS), local_xbee=self.xbee_device)
         # FIXME : This MAC address will need to be updated to the actual FSW radio's MAC address
 
+    def start_telemetry(self):
+        """Start receiving telemetry data."""
         try:
             self.xbee_device.open()
         except Exception as e:
-            raise Exception(f"GCSXbee [INITIALIZATION] Failed to open XBee device: {e}")
-
-    def start_telemetry(self):
-        """Start receiving telemetry data."""
+            raise Exception(f"GCSXbee [START TELEMETRY] Failed to open XBee device: {e}")
         # Create CSV file with specified naming format
         self.csv_file = open(self.filepath, 'w', newline='')
         self.csv_writer = csv.writer(self.csv_file)
@@ -194,6 +194,7 @@ class TelemetryHandler:
 
                     elif data[24] == "SIM ACTIVATE":
                         self.sim_activate = True
+                        
 
                     elif data[24] == "SIM DISABLE":
                         self.sim_activate = False
@@ -202,7 +203,7 @@ class TelemetryHandler:
             except Exception as e:
                 print(f"ERROR [RECEIVE TELEMETRY] : {e}")
 
-    def set_pressure(self, pressure):
+    def start_sim(self, pressure):
         """
         Send simulated pressure data (simulation mode only).
 
@@ -211,11 +212,11 @@ class TelemetryHandler:
         """
         # self.send_command(f"CMD,{self.team_id},SIMP,{pressure}")
 
-        self.is_receiving = True
-        self.receive_thread = Thread(target=self.send_command_pressure, args=("F:/sim.csv"))
-        self.receive_thread.start()
+        if (self.sim_enable and self.sim_activate):
+            self.simulation_thread = Thread(target=self._send_command_pressure, args=(self.SIM_CSV_PATH))
+            self.simulation_thread.start()
 
-    def send_command_pressure(self, csv_path):
+    def _send_command_pressure(self, csv_path):
         """
         Send simulated pressure data (simulation mode only).
 

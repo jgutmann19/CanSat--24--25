@@ -363,6 +363,7 @@ def send_command():
     if command in ["EXIT", "exit"]:
         telemetry_handler.stop_telemetry()
         root.destroy()
+        quit()
     
     elif command != "":
         try:
@@ -553,8 +554,13 @@ ssdc_image_label.image = ssdc_image
 ssdc_image_label.grid(row=1, column=6, columnspan=1, padx=5, pady=5)
 
 # Create a telemetry handler object
-telemetry_handler = GCSXbee.TelemetryHandler("3174", port="COM8", baudrate=115200,path=path)
-telemetry_handler.start_telemetry()
+telemetry_handler = None
+try:
+    telemetry_handler = GCSXbee.TelemetryHandler("3174", port="COM8", baudrate=115200,path=path)
+    telemetry_handler.start_telemetry()
+except Exception as e:
+    print(e)
+    # quit()
 
 # Start updating graphs every second
 update_everything()
