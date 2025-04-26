@@ -47,31 +47,31 @@ if randomizer:
                 random.randint(1, 3), # GPS_Sats                            24
                 cmd] # CMD                                                  25
 else:
-    message = [3174, # Team_ID                                              1
-                str(datetime.now())[11:][:-7], # Mission_Time               2
-                packet_count, # Packet_Count                                3
-                mode, # Mode                                                4
-                state, # State                                              5
-                100, # Altitude                           6
-                100, # Temperature                        7
-                100, # Pressure                          8
-                100, # Voltage                           9
-                100, # Gyro_R                             10
-                100, # Gyro_P                             11
-                100, # Gyro_Y                             12
-                100, # Accel_R                            13
-                100, # Accel_P                            14
-                100, # Accel_Y                            15
-                100, # Magn_R                             16
-                100, # Magn_P                            17
-                100, # Magn_Y                            18
-                100, # Auto_Gyro_Rotation_Rate             19
-                str(datetime.now())[11:][:-7], # GPS_Time                   20
-                100, # GPS_Altitude                       21
-                100, # GPS_Latitude                       22
-                100, # GPS_Longitude                      23
-                100, # GPS_Sats                            24
-                "CXON"] # CMD                                                  25]
+    message = [3174, #                                              Team_ID 1
+                str(datetime.now())[11:][:-7], #               Mission_Time 2
+                packet_count, #                                Packet_Count 3
+                mode, #                                                Mode 4
+                state, #                                              State 5
+                100, #                                             Altitude 6
+                100, #                                          Temperature 7
+                100, #                                             Pressure 8
+                100, #                                              Voltage 9
+                100, #                                               Gyro_R 10
+                100, #                                               Gyro_P 11
+                100, #                                               Gyro_Y 12
+                100, #                                              Accel_R 13
+                100, #                                              Accel_P 14
+                100, #                                              Accel_Y 15
+                100, #                                               Magn_R 16
+                100, #                                               Magn_P 17
+                100, #                                               Magn_Y 18
+                100, #                              Auto_Gyro_Rotation_Rate 19
+                str(datetime.now())[11:][:-7], #                   GPS_Time 20
+                100, #                                         GPS_Altitude 21
+                100, #                                         GPS_Latitude 22
+                100, #                                        GPS_Longitude 23
+                100, #                                             GPS_Sats 24
+                "CXON"] #                                               CMD 25
     
 
 

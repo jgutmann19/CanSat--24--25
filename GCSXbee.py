@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice, XBee64BitAddress
 
 class TelemetryHandler:
-    def __init__(self, team_id, port="COM3", baudrate=9600, path=None): # default port val for Fernando's laptop
+    def __init__(self, team_id, port="COM3", baudrate=9600, path=None, mac_addr="0013A20041E060D1"): # default port val for Fernando's laptop
         """
         Initialize the telemetry handler.
 
@@ -43,9 +43,9 @@ class TelemetryHandler:
         ]
 
         # Initialize XBee connection
-        MAC_ADDRESS = "0013A20041E060D2" # This is the MAC address of the FSW radio (the one on the Sat)
+        self.mac_address = mac_addr # This is the MAC address of the FSW radio (the one on the Sat)
         self.xbee_device = XBeeDevice(port, baudrate)
-        self.receiver = RemoteXBeeDevice(x64bit_addr=XBee64BitAddress.from_hex_string(MAC_ADDRESS), local_xbee=self.xbee_device)
+        self.receiver = RemoteXBeeDevice(x64bit_addr=XBee64BitAddress.from_hex_string(self.mac_address), local_xbee=self.xbee_device)
         # FIXME : This MAC address will need to be updated to the actual FSW radio's MAC address
 
     def start_telemetry(self):
@@ -158,7 +158,7 @@ class TelemetryHandler:
             
             except:
                 current_time = datetime.now(timezone.utc).strftime('%H:%M:%S') # Get the current time in UTC
-                print(current_time)
+            print(current_time)
             ST = f"CMD,{self.team_id},ST,{current_time}"
             print(ST)
             try:

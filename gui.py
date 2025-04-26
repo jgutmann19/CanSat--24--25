@@ -9,11 +9,16 @@ from datetime import datetime, timezone
 from PIL import Image, ImageTk
 
 
+##################### MAC Address for the XBee on the Cansat #####################
+global MAC_ADDRESS
+MAC_ADDRESS = "0013A20041E060D2"  # This is the MAC address of the FSW radio (the one on the Sat)
+##################################################################################
+
 # Colors and Fonts for Blue and Orange Theme
 PRIMARY_COLOR = '#F0F0F0'   # Light gray
 TEXT_COLOR = '#FA4616'      # Gator Orange
 GATOR_BLUE = "#0021A5"      # Gator Blue
-FONT_TITLE = ("Verdana", 14, "bold")
+FONT_TITLE = ("Verdana", 16, "bold")
 CMD_ECHO = ""  # Initialize CMD_ECHO with an empty string
 
 # various global variables
@@ -556,7 +561,7 @@ ssdc_image_label.grid(row=1, column=6, columnspan=1, padx=5, pady=5)
 # Create a telemetry handler object
 telemetry_handler = None
 try:
-    telemetry_handler = GCSXbee.TelemetryHandler("3174", port="COM8", baudrate=115200,path=path)
+    telemetry_handler = GCSXbee.TelemetryHandler("3174", port="COM6", baudrate=115200,path=path, mac_addr=MAC_ADDRESS)
     telemetry_handler.start_telemetry()
 except Exception as e:
     print(e)
