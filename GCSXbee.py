@@ -8,8 +8,10 @@ from datetime import datetime, timezone
 
 from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice, XBee64BitAddress
 
+
+
 class TelemetryHandler:
-    def __init__(self, team_id, port="COM3", baudrate=9600, path=None, mac_addr="0013A20041E060D1"): # default port val for Fernando's laptop
+    def __init__(self, team_id, port="COM3", baudrate=9600, write_path=None, mac_addr="0013A20041E060D1"): # default port val for Fernando's laptop
         """
         Initialize the telemetry handler.
 
@@ -18,6 +20,12 @@ class TelemetryHandler:
             port (str): Serial port for communication.
             baudrate (int): Baud rate for XBee communication.
         """
+
+        ##################### File path for the simulated data to be used #####################
+        self.SIM_CSV_PATH = "E:/simulated_data.csv"  # Path to the simulated data CSV file
+        #######################################################################################
+
+        # Some of these definitions are redundant, but they are here for clarity
         self.team_id = team_id
         self.is_receiving = False
         self.csv_file = None
@@ -25,11 +33,12 @@ class TelemetryHandler:
         self.packet_count = 0
         self.sim_enable = False
         self.sim_activate = False
-        self.SIM_CSV_PATH = "E:/simulated_data.csv"
-        self.filepath = path
-        if self.filepath == None:
-            raise Exception(f"GCSXbee [INTIALIZATION] : No file path given")
-        
+        self.simulation_thread = None
+        self.receiver = None
+        self.write_filepath = write_path
+        if self.write_filepath == None:
+            raise Exception(f"GCSXbee (File: GCSXbee.py Function: __init__) [INITIALIZATION] : No file write_path given")
+
         # Define telemetry fields as per competition requirements
         self.telemetry_fields = [
             'TEAM_ID', 'MISSION_TIME', 'PACKET_COUNT', 'MODE', 'STATE',
@@ -53,9 +62,10 @@ class TelemetryHandler:
         try:
             self.xbee_device.open()
         except Exception as e:
-            raise Exception(f"GCSXbee [START TELEMETRY] Failed to open XBee device: {e}")
+            raise Exception(f"GCSXbee (File: GCSXbee.py Function: start_command) [START TELEMETRY] Failed to open XBee device: {e}")
+        
         # Create CSV file with specified naming format
-        self.csv_file = open(self.filepath, 'w', newline='')
+        self.csv_file = open(self.write_filepath, 'w', newline='')
         self.csv_writer = csv.writer(self.csv_file)
 
         # Write header row
@@ -75,6 +85,8 @@ class TelemetryHandler:
         if self.csv_file:
             self.csv_file.close()
 
+        print(f"GCSXbee (File: GCSXbee.py Function: stop_telemetry) [STOP TELEMETRY] : Telemetry stopped. {self.packet_count} packets received.")
+
         # if self.xbee_device and self.xbee_device.is_open():
         #     self.send_command(f"CMD,{self.team_id},CX,OFF")
         #     self.xbee_device.close()
@@ -93,7 +105,7 @@ class TelemetryHandler:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=CXON)
             except Exception as e:
-                print(f"ERROR [COMMAND CXON]: Error sending command - {e}")
+                print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND CXON]: Error sending command - {e}")
 
         elif command == "CX OFF":
             CXOFF = f"CMD,{self.team_id},CX,OFF"
@@ -101,7 +113,7 @@ class TelemetryHandler:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver ,data=CXOFF)
             except Exception as e:
-                print(f"ERROR [COMMAND CXOFF]: Error sending command - {e}")
+                print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND CXOFF]: Error sending command - {e}")
         
         elif command == "SIMULATION ENABLE":
             ENABLE = f"CMD,{self.team_id},SIM,ENABLE"
@@ -109,7 +121,7 @@ class TelemetryHandler:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=ENABLE)
             except Exception as e:
-                print(f"ERROR [COMMAND SIM ENABLE]: Error sending command - {e}")
+                print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND SIM ENABLE]: Error sending command - {e}")
 
         elif command == "SIMULATION ACTIVATE":
             ACTIVATE = f"CMD,{self.team_id},SIM,ACTIVATE"
@@ -117,7 +129,7 @@ class TelemetryHandler:
                 if self.xbee_device.is_open() and self.sim_enable:
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=ACTIVATE)
             except Exception as e:
-                print(f"ERROR [COMMAND SIM ACTIVATE]: Error sending command - {e}")
+                print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND SIM ACTIVATE]: Error sending command - {e}")
         
         elif command == "SIMULATION DISABLE":
             DISABLE = f"CMD,{self.team_id},SIM,DISABLE"
@@ -125,7 +137,7 @@ class TelemetryHandler:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=DISABLE)
             except Exception as e:
-                print(f"ERROR [COMMAND SIM DISABLE]: Error sending command - {e}")
+                print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND SIM DISABLE]: Error sending command - {e}")
 
         elif command == "CAL":
             CAL = f"CMD,{self.team_id},CAL"
@@ -133,7 +145,7 @@ class TelemetryHandler:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=CAL)
             except Exception as e:
-                print(f"ERROR [COMMAND CAL]: Error sending command - {e}")
+                print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND CAL]: Error sending command - {e}")
 
         elif command == "ST GPS":
             ST_GPS = f"CMD,{self.team_id},ST,GPS"
@@ -141,7 +153,7 @@ class TelemetryHandler:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=ST_GPS)
             except Exception as e:
-                print(f"ERROR [COMMAND ST GPS]: Error sending command - {e}")
+                print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND ST GPS]: Error sending command - {e}")
 
         elif command[0:2] == "ST":
             current_time = "00:00:00"
@@ -149,11 +161,13 @@ class TelemetryHandler:
                 current_time = command[3:]
                 if current_time == "":
                     current_time = datetime.now(timezone.utc).strftime('%H:%M:%S')
+                elif len(current_time) != 8:
+                    current_time = datetime.now(timezone.utc).strftime('%H:%M:%S')
                 elif current_time.count(":") != 2:
                     current_time = datetime.now(timezone.utc).strftime('%H:%M:%S')
                 elif current_time[2] != ":" or current_time[5] != ":":
                     current_time = datetime.now(timezone.utc).strftime('%H:%M:%S')
-                elif len(current_time) != 8:
+                elif int(current_time[0:2]) > 23 or int(current_time[3:5]) > 59 or int(current_time[6:8]) > 59:
                     current_time = datetime.now(timezone.utc).strftime('%H:%M:%S')
             
             except:
@@ -165,9 +179,12 @@ class TelemetryHandler:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=ST)
             except Exception as e:
-                print(f"ERROR [COMMAND ST]: Error sending command - {e}")
+                print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND ST]: Error sending command - {e}")
 
         # FIXME : Add any MEC commands here -------------------------------------------------------------------------------
+
+        else:
+            print(f"ERROR (File: GCSXbee.py Function: send_command) [SEND_COMMAND]: Unknown command - {command}")
 
     def _receive_telemetry(self):
         """Internal method to receive and process telemetry data."""
@@ -188,22 +205,25 @@ class TelemetryHandler:
                         # Update packet count
                         self.packet_count += 1
 
-                    # FIXME : This may need to be updated to handle the format that FSW sends us -------------------------
+                    # FIXME : This may need to be updated to handle the format that FSW sends us (the array index that is) -------------------------
                     if data[24] == "SIM ENABLE":
                         self.sim_enable = True
 
                     elif data[24] == "SIM ACTIVATE":
                         self.sim_activate = True
-                        
+                        if not self.simulation_thread.is_alive():  
+                            self.start_sim()                     
 
                     elif data[24] == "SIM DISABLE":
                         self.sim_activate = False
                         self.sim_enable = False
+                        if self.simulation_thread.is_alive():
+                            self.stop_sim()
 
             except Exception as e:
-                print(f"ERROR [RECEIVE TELEMETRY] : {e}")
+                print(f"ERROR (File: GCSXbee.py Function: _receive_telemetry) [RECEIVE TELEMETRY] : {e}")
 
-    def start_sim(self, pressure):
+    def start_sim(self):
         """
         Send simulated pressure data (simulation mode only).
 
@@ -216,15 +236,31 @@ class TelemetryHandler:
             self.simulation_thread = Thread(target=self._send_command_pressure, args=(self.SIM_CSV_PATH))
             self.simulation_thread.start()
 
+    def stop_sim(self):
+        """
+        Stop sending simulated pressure data.
+        """
+        while self.simulation_thread.is_alive():
+            print("Waiting for simulation thread to finish...")
+            self.simulation_thread.join()
+
+        self.sim_enable = False
+        self.sim_activate = False
+        print("Simulation stopped.")
+
     def _send_command_pressure(self, csv_path):
         """
         Send simulated pressure data (simulation mode only).
 
         Args:
-            pressure (int): Pressure in pascals.
+            csv_path (string): Path to the CSV file containing pressure data.
         """
         with open(csv_path, 'r') as csv_file:
             csv_reader = csv.reader(csv_file)
             for row in csv_reader:
+                if not self.sim_enable or not self.sim_activate: # Check if simulation is enabled and activated
+                    print("Simulation disabled or not activated. Stopping simulation thread.")
+                    break
                 self.send_command(f"CMD,{self.team_id},SIMP,{row[0]}")
                 time.sleep(1)
+        print("Simulation thread finished.")

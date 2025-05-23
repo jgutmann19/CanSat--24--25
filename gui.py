@@ -22,13 +22,14 @@ FONT_TITLE = ("Verdana", 16, "bold")
 CMD_ECHO = ""  # Initialize CMD_ECHO with an empty string
 
 # various global variables
-global path
+global write_path
 global previous_command
 global curr_packet
 global last_packet
 global generate_new_packet
 global simulation_active
-path = "Flight_3174.csv"
+write_path = "E:/Flight_3174.csv" # This is the path to the CSV file where the telemetry data is written
+                                  # It's just as important as the MAC address for the XBee but only the 'E' (or drive letter) needs to be changed
 previous_command = ""
 curr_packet = [0 for _ in range(26)]
 last_packet = [0 for _ in range(26)]
@@ -299,7 +300,7 @@ def update_mission_time():
 def update_everything():
     global updating_graphs, curr_packet, packet_counter, previous_command
 
-    get_last_csv_row(path) # Get the last row in the csv
+    get_last_csv_row(write_path) # Get the last row in the csv
     try:
         current_time = "GPS Time: " + str(curr_packet[19]) # First attempt to get the latest GPS time
     except:
@@ -369,14 +370,13 @@ def send_command():
         telemetry_handler.stop_telemetry()
         root.destroy()
         quit()
-    
+        # This is because I can't be bothered to look for a nice way to close the window after forced fullscreen - Joel
+        
     elif command != "":
         try:
             telemetry_handler.send_command(command)
         except Exception as e:
             print(f"ERROR [SEND COMMAND] : Error sending command {e}")
-
-        # This is because I can't be bothered to look for a nice way to close the window after forced fullscreen - Joel
 
     if telemetry_handler.sim_enable:
         if telemetry_handler.sim_activate:
@@ -561,7 +561,7 @@ ssdc_image_label.grid(row=1, column=6, columnspan=1, padx=5, pady=5)
 # Create a telemetry handler object
 telemetry_handler = None
 try:
-    telemetry_handler = GCSXbee.TelemetryHandler("3174", port="COM6", baudrate=115200,path=path, mac_addr=MAC_ADDRESS)
+    telemetry_handler = GCSXbee.TelemetryHandler("3174", port="COM6", baudrate=115200,write_path=write_path, mac_addr=MAC_ADDRESS)
     telemetry_handler.start_telemetry()
 except Exception as e:
     print(e)
