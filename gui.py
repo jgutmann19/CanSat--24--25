@@ -9,9 +9,9 @@ from datetime import datetime, timezone
 from PIL import Image, ImageTk
 
 
-##################### MAC Address for the XBee on the Cansat #####################
+##################### MAC Address for the XBee on the CanSat #####################
 global MAC_ADDRESS
-MAC_ADDRESS = "0013A20041E060D2"  # This is the MAC address of the FSW radio (the one on the Sat)
+MAC_ADDRESS = "0013A20041E060D2"  # This is the MAC address of the FSW radio (the one on the CanSat)
 ##################################################################################
 
 # Colors and Fonts for Blue and Orange Theme
