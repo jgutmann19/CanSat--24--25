@@ -9,10 +9,13 @@ from datetime import datetime, timezone
 from PIL import Image, ImageTk
 
 
-##################### MAC Address for the XBee on the CanSat #####################
+##################### Global Important Variables #####################
 global MAC_ADDRESS
-MAC_ADDRESS = "0013A20041E060D2"  # This is the MAC address of the FSW radio (the one on the CanSat)
-##################################################################################
+MAC_ADDRESS = "0013A2004210DA73"  # This is the MAC address of the FSW radio (the one on the CanSat)
+
+global COMM_PORT
+COMM_PORT = "COM4"  # Not all radios and devices use the same port, so this is set to a default value. Change as needed.
+######################################################################
 
 # Colors and Fonts for Blue and Orange Theme
 PRIMARY_COLOR = '#F0F0F0'   # Light gray
@@ -28,7 +31,8 @@ global curr_packet
 global last_packet
 global generate_new_packet
 global simulation_active
-write_path = "E:/Flight_3174.csv" # This is the path to the CSV file where the telemetry data is written
+# write_path = "E:/Flight_3174.csv"
+write_path = "Flight_3174.csv" # This is the path to the CSV file where the telemetry data is written
                                   # It's just as important as the MAC address for the XBee but only the 'E' (or drive letter) needs to be changed
 previous_command = ""
 curr_packet = [0 for _ in range(26)]
@@ -67,9 +71,9 @@ graphs_data = {
     "Mag_Y": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
 }
 # Data arrays for the 3D plot
-gyro_latitude_points = [0, 1, 2, 3, 4, 5, 6, 7]
-gyro_longitude_points = [0, 1, 2, 3, 4, 5, 6, 7]
-gyro_altitude_points = [0, 1, 2, 3, 4, 5, 6, 7]
+gps_latitude_points = [0, 1, 2, 3, 4, 5, 6, 7]
+gps_longitude_points = [0, 1, 2, 3, 4, 5, 6, 7]
+gps_altitude_points = [0, 1, 2, 3, 4, 5, 6, 7]
 
 # Collect current graph data from the latest packet  Old: (Function to generate random data for graphs)
 def collect_graph_data():
@@ -89,9 +93,9 @@ def collect_graph_data():
     try:
         x_values[7] = int(curr_packet[2])
         # Currently tracks all GPS data for the 3D plot
-        gyro_altitude_points.append(int(curr_packet[20]))
-        gyro_latitude_points.append(int(curr_packet[21]))
-        gyro_longitude_points.append(int(curr_packet[22]))
+        gps_altitude_points.append(float(curr_packet[20]))
+        gps_latitude_points.append(float(curr_packet[21]))
+        gps_longitude_points.append(float(curr_packet[22]))
 
         # Uncomment these lines for the 8 seconds/packets of 3d plot data
         # gyro_altitude_points[7] = int(curr_packet[20])
@@ -101,9 +105,9 @@ def collect_graph_data():
     except:
         x_values[7] = int(last_packet[2])
         # Currently tracks all GPS data for the 3D plot
-        gyro_altitude_points.append(int(last_packet[20]))
-        gyro_latitude_points.append(int(last_packet[21]))
-        gyro_longitude_points.append(int(last_packet[22]))
+        gps_altitude_points.append(float(last_packet[20]))
+        gps_latitude_points.append(float(last_packet[21]))
+        gps_longitude_points.append(float(last_packet[22]))
 
         # Uncomment these lines for the 8 seconds/packets of 3d plot data
         # gyro_altitude_points[7] = int(curr_packet[20])
@@ -118,103 +122,103 @@ def collect_graph_data():
 
         if key == "Altitude":
             try:
-                y_values[-1] = int(curr_packet[5])
+                y_values[-1] = float(curr_packet[5])
             except:
-                y_values[-1] = int(last_packet[5])
+                y_values[-1] = float(last_packet[5])
 
 
         elif key == "Temperature":
             try:
-                y_values[-1] = int(curr_packet[6])
+                y_values[-1] = float(curr_packet[6])
             except:
-                y_values[-1] = int(last_packet[6])
+                y_values[-1] = float(last_packet[6])
 
         elif key == "Pressure":
             try:
-                y_values[-1] = int(curr_packet[7])
+                y_values[-1] = float(curr_packet[7])
             except:
-                y_values[-1] = int(last_packet[7])
+                y_values[-1] = float(last_packet[7])
 
         elif key == "Voltage":
             try:
-                y_values[-1] = int(curr_packet[8])
+                y_values[-1] = float(curr_packet[8])
             except:
-                y_values[-1] = int(last_packet[8])
+                y_values[-1] = float(last_packet[8])
 
         elif key in ["Gyro_R", "Gyro_P", "Gyro_Y"]:
             if key == "Gyro_R":
                 try:
-                    y_values[-1] = int(curr_packet[9])
+                    y_values[-1] = float(curr_packet[9])
                 except:
-                    y_values[-1] = int(last_packet[9])
+                    y_values[-1] = float(last_packet[9])
 
             elif key == "Gyro_P":
                 try:
-                    y_values[-1] = int(curr_packet[10])
+                    y_values[-1] = float(curr_packet[10])
                 except:
-                    y_values[-1] = int(last_packet[10])
+                    y_values[-1] = float(last_packet[10])
 
             elif key == "Gyro_Y":
                 try:
-                    y_values[-1] = int(curr_packet[11])
+                    y_values[-1] = float(curr_packet[11])
                 except:
-                    y_values[-1] = int(last_packet[11])
+                    y_values[-1] = float(last_packet[11])
 
         elif key == "Gyro_Rotation_Rate": # Also could be called "Auto_Gyro_Rotation_Rate" 
             try:
-                y_values[-1] = int(curr_packet[18])
+                y_values[-1] = float(curr_packet[18])
             except:
-                y_values[-1] = int(last_packet[18])
+                y_values[-1] = float(last_packet[18])
 
         elif key in ["Accel_R", "Accel_P", "Accel_Y"]:
             if key == "Accel_R":
                 try:
-                    y_values[-1] = int(curr_packet[12])
+                    y_values[-1] = float(curr_packet[12])
                 except:
-                    y_values[-1] = int(last_packet[12])
+                    y_values[-1] = float(last_packet[12])
 
             elif key == "Accel_P":
                 try:
-                    y_values[-1] = int(curr_packet[13])
+                    y_values[-1] = float(curr_packet[13])
                 except:
-                    y_values[-1] = int(last_packet[13])
+                    y_values[-1] = float(last_packet[13])
 
             elif key == "Accel_Y":
                 try:
-                    y_values[-1] = int(curr_packet[14])
+                    y_values[-1] = float(curr_packet[14])
                 except:
-                    y_values[-1] = int(last_packet[14])
+                    y_values[-1] = float(last_packet[14])
 
         elif key in ["Mag_R", "Mag_P", "Mag_Y"]:
             if key == "Mag_R":
                 try:
-                    y_values[-1] = int(curr_packet[15])
+                    y_values[-1] = float(curr_packet[15])
                 except:
-                    y_values[-1] = int(last_packet[15])
+                    y_values[-1] = float(last_packet[15])
 
             elif key == "Mag_P":
                 try:
-                    y_values[-1] = int(curr_packet[16])
+                    y_values[-1] = float(curr_packet[16])
                 except:
-                    y_values[-1] = int(last_packet[16])
+                    y_values[-1] = float(last_packet[16])
 
             elif key == "Mag_Y":
                 try:
-                    y_values[-1] = int(curr_packet[17])
+                    y_values[-1] = float(curr_packet[17])
                 except:
-                    y_values[-1] = int(last_packet[17])
+                    y_values[-1] = float(last_packet[17])
 
         elif key == "GPS_Altitude":
             try:
-                y_values[-1] = int(curr_packet[20])
+                y_values[-1] = float(curr_packet[20])
             except:
-                y_values[-1] = int(last_packet[20])
+                y_values[-1] = float(last_packet[20])
 
         elif key == "GPS_Sats":
             try:
-                y_values[-1] = int(curr_packet[23])
+                y_values[-1] = float(curr_packet[23])
             except:
-                y_values[-1] = int(last_packet[23])
+                y_values[-1] = float(last_packet[23])
 
         graphs_data[key] = (x_values, y_values) # Update the dictionary with the new values
 
@@ -283,7 +287,7 @@ def plot_3d_graphs(fig_3d_func, axs_3d_func):
     axs_3d_func.set_xlabel('GPS Latitude') # Rename the axis, mostly sure they are on the correct axis will need to check at some point
     axs_3d_func.set_ylabel('GPS Longitude')
     axs_3d_func.set_zlabel('GPS Altitude')
-    axs_3d_func.plot(gyro_latitude_points, gyro_longitude_points, gyro_altitude_points, color=GATOR_BLUE)
+    axs_3d_func.plot(gps_latitude_points, gps_longitude_points, gps_altitude_points, color=GATOR_BLUE)
     fig_3d_func.patch.set_facecolor(PRIMARY_COLOR)
     # fig_3d.patch.set_color(PRIMARY_COLOR)
     # fig_3d.patch.set_edgecolor(PRIMARY_COLOR)
@@ -292,9 +296,15 @@ def plot_3d_graphs(fig_3d_func, axs_3d_func):
 
 # Function to update the mission time dynamically
 def update_mission_time():
-    current_time = datetime.now(timezone.utc).strftime('%H:%M:%S') # Get the current time in UTC
-    mission_time_label.config(text=f"Mission Time: {current_time}")
-    root.after(50, update_mission_time)  # Update every 1 second
+    global updating_graphs, curr_packet, packet_counter, previous_command
+
+    get_last_csv_row(write_path) # Get the last row in the csv
+    try:
+        current_time = "Mission Time: " + str(curr_packet[1]) # First attempt to get the latest GPS time
+    except:
+        current_time = "Mission Time: " + str(last_packet[1]) # Just in case the csv was mid write when the line was accessed
+    mission_time_label.config(text=current_time)
+    # root.after(50, update_mission_time)  # Update every 50 milliseconds
 
 # Function to refresh all displayed variables with new data every second (1 Hz)
 def update_everything():
@@ -348,18 +358,6 @@ def update_everything():
         updating_graphs = False
     
     root.after(50, update_everything) # Because the packets come in at 1Hz, update the graphs ASAP after the new packet is received
-
-
-# FIXME : May replace this function with a bunch of IF statements in the normal functions (idk I need to sit down and figure this out) -------------------------------------------------------------------------------
-def simulation_mode():
-
-    pass
-    # Set up multithreading to run the commands while still displaying the graphs
-    # t = threading.Thread(target=telemetry_handler.send_command, args=(command)) # Will be added with the rest of the function
-    # try:
-    #     t.start()
-    # except Exception as e:
-    #     print(f"Error sending command: {e}")
 
 # Function to send command
 def send_command():
@@ -461,7 +459,7 @@ axs_3d.set_ylabel('GPS Longitude') # Y-axis
 axs_3d.set_zlabel('GPS Altitude') # Z-axis
 axs_3d.set_facecolor(PRIMARY_COLOR)
 
-axs_3d.plot(gyro_latitude_points, gyro_longitude_points, gyro_altitude_points) # X Y Z
+axs_3d.plot(gps_latitude_points, gps_longitude_points, gps_altitude_points) # X Y Z
 fig_3d.patch.set_facecolor(PRIMARY_COLOR) # Light gray background
 # fig_3d.patch.set_color(PRIMARY_COLOR)
 # fig_3d.patch.set_edgecolor(PRIMARY_COLOR)
@@ -561,7 +559,7 @@ ssdc_image_label.grid(row=1, column=6, columnspan=1, padx=5, pady=5)
 # Create a telemetry handler object
 telemetry_handler = None
 try:
-    telemetry_handler = GCSXbee.TelemetryHandler("3174", port="COM6", baudrate=115200,write_path=write_path, mac_addr=MAC_ADDRESS)
+    telemetry_handler = GCSXbee.TelemetryHandler("3174", port=COMM_PORT, baudrate=921600,write_path=write_path, mac_addr=MAC_ADDRESS)
     telemetry_handler.start_telemetry()
 except Exception as e:
     print(e)

@@ -62,7 +62,7 @@ class TelemetryHandler:
         try:
             self.xbee_device.open()
         except Exception as e:
-            raise Exception(f"GCSXbee (File: GCSXbee.py Function: start_command) [START TELEMETRY] Failed to open XBee device: {e}")
+            raise Exception(f"GCSXbee (File: GCSXbee.py Function: start_telemetry) [START TELEMETRY] Failed to open XBee device: {e}")
         
         # Create CSV file with specified naming format
         self.csv_file = open(self.write_filepath, 'w', newline='')
@@ -194,6 +194,13 @@ class TelemetryHandler:
                 if xbee_message:
                     # Read and decode the message
                     line = xbee_message.data.decode('utf-8').strip()
+                    xbee_message = self.xbee_device.read_data(20)  # Read the next message
+                    if xbee_message is None:   
+                        continue
+                    line = line + xbee_message.data.decode('utf-8').strip()  # Append the next message data
+                    print()
+                    print(f"Received data: {line}")
+                    print()
                     data = line.split(',')
 
                     # Validate team ID and basic data format
@@ -222,6 +229,29 @@ class TelemetryHandler:
 
             except Exception as e:
                 print(f"ERROR (File: GCSXbee.py Function: _receive_telemetry) [RECEIVE TELEMETRY] : {e}")
+
+    # def _receive_telemetry_serial(self):
+    #     """Internal method to receive and process telemetry data over serial."""
+    #     while self.is_receiving:
+    #         try:
+    #             xbee_message = self.xbee_device.read_data(20)
+    #             if xbee_message:
+    #                 # Read and decode the message
+    #                 line = xbee_message.data.decode('utf-8').strip()
+    #                 print(f"Received data: {line}")
+    #                 data = line.split(',')
+
+    #                 # Validate team ID and basic data format
+    #                 if (len(data) >= len(self.telemetry_fields)) and (data[0] == self.team_id):
+    #                     # Write to CSV file
+    #                     self.csv_writer.writerow(data)
+    #                     self.csv_file.flush()  # Ensure data is written to disk
+
+    #                     # Update packet count
+    #                     self.packet_count += 1
+
+    #         except Exception as e:
+    #             print(f"ERROR (File: GCSXbee.py Function: _receive_telemetry_serial) [RECEIVE TELEMETRY SERIAL] : {e}")
 
     def start_sim(self):
         """
