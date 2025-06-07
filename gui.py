@@ -11,7 +11,7 @@ from PIL import Image, ImageTk
 
 ##################### Global Important Variables #####################
 global MAC_ADDRESS
-MAC_ADDRESS = "0013A2004210DA73"  # This is the MAC address of the FSW radio (the one on the CanSat)
+MAC_ADDRESS = "0013A2004210DA71"  # This is the MAC address of the FSW radio (the one on the CanSat)
 
 global COMM_PORT
 COMM_PORT = "COM4"  # Not all radios and devices use the same port, so this is set to a default value. Change as needed.
@@ -72,8 +72,8 @@ graphs_data = {
 }
 # Data arrays for the 3D plot
 gps_latitude_points = [0, 1, 2, 3, 4, 5, 6, 7]
-gps_longitude_points = [0, 1, 2, 3, 4, 5, 6, 7]
-gps_altitude_points = [0, 1, 2, 3, 4, 5, 6, 7]
+gps_longitude_points = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]
+gps_altitude_points = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]
 
 # Collect current graph data from the latest packet  Old: (Function to generate random data for graphs)
 def collect_graph_data():
@@ -266,7 +266,7 @@ def plot_all_graphs(fig_func, axs_func):
         elif graph_title == "Gyro_Rotation_Rate":
             ax.set_ylabel('Degrees (°/s)', fontname='Verdana')
         elif graph_title in ["Accel_R", "Accel_P", "Accel_Y"]:
-            ax.set_ylabel('Accel (m/s²)', fontname='Verdana')
+            ax.set_ylabel('Accel (°/s²)', fontname='Verdana')
         elif graph_title in ["Mag_R", "Mag_P", "Mag_Y"]:
             ax.set_ylabel('Mag Field (µT)', fontname='Verdana')
         elif graph_title == "GPS_Altitude":
@@ -277,6 +277,8 @@ def plot_all_graphs(fig_func, axs_func):
     # Adjust layout to prevent overlap
     plt.subplots_adjust(hspace=1.0, wspace=1.4)  # Adjust space between subplots
     canvas.draw()  # Redraw the canvas
+
+    update_mission_time()
 
 # Like the previous function but just for the 3D plot for some separation
 def plot_3d_graphs(fig_3d_func, axs_3d_func):
@@ -303,6 +305,7 @@ def update_mission_time():
         current_time = "Mission Time: " + str(curr_packet[1]) # First attempt to get the latest GPS time
     except:
         current_time = "Mission Time: " + str(last_packet[1]) # Just in case the csv was mid write when the line was accessed
+    print("Current Mission Time : ", current_time)
     mission_time_label.config(text=current_time)
     # root.after(50, update_mission_time)  # Update every 50 milliseconds
 
