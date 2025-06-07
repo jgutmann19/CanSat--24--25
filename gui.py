@@ -86,33 +86,33 @@ def collect_graph_data():
     for i in range(7):
         x_values[i] = x_values[i + 1]
         # If we only want the last 8 seconds/packets of flight data for the 3d plot, uncomment these lines and adjust the relevant "append" lines
-        # gyro_altitude_points[i] = gyro_altitude_points[i + 1]
-        # gyro_latitude_points[i] = gyro_latitude_points[i + 1]
-        # gyro_longitude_points[i] = gyro_longitude_points[i + 1]
+        gps_altitude_points[i] = gps_altitude_points[i + 1]
+        gps_latitude_points[i] = gps_latitude_points[i + 1]
+        gps_longitude_points[i] = gps_longitude_points[i + 1]
 
     try:
         x_values[7] = int(curr_packet[2])
         # Currently tracks all GPS data for the 3D plot
-        gps_altitude_points.append(float(curr_packet[20]))
-        gps_latitude_points.append(float(curr_packet[21]))
-        gps_longitude_points.append(float(curr_packet[22]))
+        # gps_altitude_points.append(float(curr_packet[20]))
+        # gps_latitude_points.append(float(curr_packet[21]))
+        # gps_longitude_points.append(float(curr_packet[22]))
 
         # Uncomment these lines for the 8 seconds/packets of 3d plot data
-        # gyro_altitude_points[7] = int(curr_packet[20])
-        # gyro_latitude_points[7] = int(curr_packet[21])
-        # gyro_longitude_points[7] = int(curr_packet[22])
+        gps_altitude_points[7] = float(curr_packet[20])
+        gps_latitude_points[7] = float(curr_packet[21])
+        gps_longitude_points[7] = float(curr_packet[22])
 
     except:
         x_values[7] = int(last_packet[2])
         # Currently tracks all GPS data for the 3D plot
-        gps_altitude_points.append(float(last_packet[20]))
-        gps_latitude_points.append(float(last_packet[21]))
-        gps_longitude_points.append(float(last_packet[22]))
+        # gps_altitude_points.append(float(last_packet[20]))
+        # gps_latitude_points.append(float(last_packet[21]))
+        # gps_longitude_points.append(float(last_packet[22]))
 
         # Uncomment these lines for the 8 seconds/packets of 3d plot data
-        # gyro_altitude_points[7] = int(curr_packet[20])
-        # gyro_latitude_points[7] = int(curr_packet[21])
-        # gyro_longitude_points[7] = int(curr_packet[22])
+        gps_altitude_points[7] = float(last_packet[20])
+        gps_latitude_points[7] = float(last_packet[21])
+        gps_longitude_points[7] = float(last_packet[22])
 
     # Collect data from the latest packet for each field in the graphs_data dictionary
     for key in graphs_data:
@@ -305,7 +305,7 @@ def update_mission_time():
         current_time = "Mission Time: " + str(curr_packet[1]) # First attempt to get the latest GPS time
     except:
         current_time = "Mission Time: " + str(last_packet[1]) # Just in case the csv was mid write when the line was accessed
-    print("Current Mission Time : ", current_time)
+    # print("Current Mission Time : ", current_time)
     mission_time_label.config(text=current_time)
     # root.after(50, update_mission_time)  # Update every 50 milliseconds
 

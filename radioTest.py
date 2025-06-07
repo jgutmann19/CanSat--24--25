@@ -45,7 +45,7 @@ if randomizer:
                 random.randint(1, 50), # GPS_Latitude                       22
                 random.randint(1, 50), # GPS_Longitude                      23
                 random.randint(1, 3), # GPS_Sats                            24
-                cmd] # CMD                                                  25
+                cmd] # CMD                                                  25  
 else:
     message = [3174, #                                              Team_ID 1
                 str(datetime.now())[11:][:-7], #               Mission_Time 2

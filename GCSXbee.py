@@ -22,7 +22,7 @@ class TelemetryHandler:
         """
 
         ##################### File path for the simulated data to be used #####################
-        self.SIM_CSV_PATH = "E:/simulated_data.csv"  # Path to the simulated data CSV file
+        self.SIM_CSV_PATH = "SIM_Pressure.csv"  # Path to the simulated data CSV file
         #######################################################################################
 
         # Some of these definitions are redundant, but they are here for clarity
@@ -117,7 +117,7 @@ class TelemetryHandler:
             except Exception as e:
                 print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND CXOFF]: Error sending command - {e}")
         
-        elif command == "SIMULATION ENABLE":
+        elif command == "SIM ENABLE":
             ENABLE = f"CMD,{self.team_id},SIM,ENABLE\0\0\0"
             try:
                 if self.xbee_device.is_open():
@@ -126,7 +126,7 @@ class TelemetryHandler:
             except Exception as e:
                 print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND SIM ENABLE]: Error sending command - {e}")
 
-        elif command == "SIMULATION ACTIVATE":
+        elif command == "SIM ACTIVATE":
             ACTIVATE = f"CMD,{self.team_id},SIM,ACTIVATE\0"
             try:
                 if self.xbee_device.is_open() and self.sim_enable:
@@ -135,11 +135,14 @@ class TelemetryHandler:
             except Exception as e:
                 print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND SIM ACTIVATE]: Error sending command - {e}")
         
-        elif command == "SIMULATION DISABLE":
+        elif command == "SIM DISABLE":
             DISABLE = f"CMD,{self.team_id},SIM,DISABLE\0\0"
             try:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=DISABLE)
+                    print()
+                    print("Command SIM DISABLE sent")
+                    print()
                     # self.xbee_device.send_data_async(remote_xbee=self.receiver, data=DISABLE)
             except Exception as e:
                 print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND SIM DISABLE]: Error sending command - {e}")
@@ -236,8 +239,13 @@ class TelemetryHandler:
                         continue
                     line = line + xbee_message.data.decode('utf-8').strip()  # Append the next message data
                     data = line.split(',')
-                    print(line)
-                    print("GPS Time: ", data[19])
+                    # print(line)
+                    # print("GPS Time: ", data[19])
+
+                    current_time = datetime.now(timezone.utc).strftime('%H:%M:%S')
+                    data[19] = current_time
+                    # print("GPS Time: ", data[19])
+                    # print()
 
                     # Validate team ID and basic data format
                     if (len(data) >= len(self.telemetry_fields)) and (data[0] == self.team_id):
@@ -249,22 +257,23 @@ class TelemetryHandler:
                         self.packet_count += 1
 
                     # FIXME : This may need to be updated to handle the format that FSW sends us (the array index that is) -------------------------
-                    if data[24] == "SIM ENABLE":
+                    if data[24] == "SIMENABLE":
                         self.sim_enable = True
 
-                    elif data[24] == "SIM ACTIVATE":
+                    elif data[24] == "SIMACT":
                         self.sim_activate = True
-                        if not self.simulation_thread.is_alive():  
-                            self.start_sim()                     
+                        # if not self.simulation_thread.is_alive():  
+                        self.start_sim()                     
 
-                    elif data[24] == "SIM DISABLE":
+                    elif data[24] == "SIMDIS":
                         self.sim_activate = False
                         self.sim_enable = False
-                        if self.simulation_thread.is_alive():
+                        if self.simulation_thread:
                             self.stop_sim()
 
             except Exception as e:
                 print(f"ERROR (File: GCSXbee.py Function: _receive_telemetry) [RECEIVE TELEMETRY] : {e}")
+                
 
     # def _receive_telemetry_serial(self):
     #     """Internal method to receive and process telemetry data over serial."""
@@ -299,34 +308,39 @@ class TelemetryHandler:
         # self.send_command(f"CMD,{self.team_id},SIMP,{pressure}")
 
         if (self.sim_enable and self.sim_activate):
-            self.simulation_thread = Thread(target=self._send_command_pressure, args=(self.SIM_CSV_PATH))
+            print(self.SIM_CSV_PATH)
+            self.simulation_thread = Thread(target=self._send_command_pressure)
             self.simulation_thread.start()
 
     def stop_sim(self):
         """
         Stop sending simulated pressure data.
         """
-        while self.simulation_thread.is_alive():
-            print("Waiting for simulation thread to finish...")
-            self.simulation_thread.join()
+        # while self.simulation_thread:
+        print("Waiting for simulation thread to finish...")
+        self.simulation_thread.join()
 
         self.sim_enable = False
         self.sim_activate = False
         print("Simulation stopped.")
 
-    def _send_command_pressure(self, csv_path):
+    def _send_command_pressure(self):
         """
         Send simulated pressure data (simulation mode only).
 
         Args:
             csv_path (string): Path to the CSV file containing pressure data.
         """
-        with open(csv_path, 'r') as csv_file:
+        with open(self.SIM_CSV_PATH, 'r') as csv_file:
             csv_reader = csv.reader(csv_file)
             for row in csv_reader:
                 if not self.sim_enable or not self.sim_activate: # Check if simulation is enabled and activated
                     print("Simulation disabled or not activated. Stopping simulation thread.")
                     break
-                self.send_command(f"CMD,{self.team_id},SIMP,{row[0]}")
+                DATA = f"CMD,{self.team_id},SIMP,{row[0]}"
+                self.xbee_device.send_data_async(remote_xbee=self.receiver, data=DATA)
                 time.sleep(1)
+
+        DATA = f"CMD,{self.team_id},SIM,DISABLE";
+        self.xbee_device.send_data_async(remote_xbee=self.receiver, data=DATA)
         print("Simulation thread finished.")
