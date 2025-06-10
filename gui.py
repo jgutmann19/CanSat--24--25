@@ -31,7 +31,6 @@ global curr_packet
 global last_packet
 global generate_new_packet
 global simulation_active
-# write_path = "E:/Flight_3174.csv"
 write_path = "Flight_3174.csv" # This is the path to the CSV file where the telemetry data is written
                                   # It's just as important as the MAC address for the XBee but only the 'E' (or drive letter) needs to be changed
 previous_command = ""
@@ -41,18 +40,18 @@ generate_new_packet = True
 simulation_active = False
 
 # Default values and colors for different aspects of the graphs
-plt.rcParams.update({'font.size': 14})  # Set default font size for plots
-plt.rcParams['text.color'] = GATOR_BLUE  # Set default text color for plots
-plt.rcParams['font.family'] = 'Verdana'  # Set default font family for plots
+plt.rcParams.update({'font.size': 14})        # Set default font size for plots
+plt.rcParams['text.color'] = GATOR_BLUE       # Set default text color for plots
+plt.rcParams['font.family'] = 'Verdana'       # Set default font family for plots
 plt.rcParams['axes.labelcolor'] = GATOR_BLUE  # Set default axes label color for plots
-plt.rcParams['axes.titleweight'] = 'bold'  # Set default font weight for plots
+plt.rcParams['axes.titleweight'] = 'bold'     # Set default font weight for plots
 
-plt.rcParams['axes3d.xaxis.panecolor'] = 'white'
+plt.rcParams['axes3d.xaxis.panecolor'] = 'white' # Set backgrounds of the graphs to contrast the primary color
 plt.rcParams['axes3d.yaxis.panecolor'] = 'white'
 plt.rcParams['axes3d.zaxis.panecolor'] = 'white'
 
 # Sample Data for Graphs with specified names
-x_values = [-7, -6, -5, -4, -3, -2, -1, 0]  # 8 x-values
+x_values = [-7, -6, -5, -4, -3, -2, -1, 0]  # 8 x-values (Packets)
 graphs_data = {
     "Temperature": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
     "Pressure": (x_values, [0, 0, 0, 0, 0, 0, 0, 0]),
@@ -80,7 +79,7 @@ def collect_graph_data():
     # Just in case the CSV stops being updated. This keeps the graphs as the last 8 available values instead of turning
     # into a single point on a plot
     if curr_packet == last_packet:
-        return
+        return # This doesn't actually do what I thought it would do. I'm leaving it because
 
     # I'm going to keep the auto scrolling time values as it'll give a good point of reference on whether the packets are stalled
     for i in range(7):
@@ -92,7 +91,7 @@ def collect_graph_data():
 
     try:
         x_values[7] = int(curr_packet[2])
-        # Currently tracks all GPS data for the 3D plot
+        # Uncomment these lines to track all GPS data for the 3D plot
         # gps_altitude_points.append(float(curr_packet[20]))
         # gps_latitude_points.append(float(curr_packet[21]))
         # gps_longitude_points.append(float(curr_packet[22]))
@@ -104,7 +103,7 @@ def collect_graph_data():
 
     except:
         x_values[7] = int(last_packet[2])
-        # Currently tracks all GPS data for the 3D plot
+        # Uncomment thes lines to track all GPS data for the 3D plot
         # gps_altitude_points.append(float(last_packet[20]))
         # gps_latitude_points.append(float(last_packet[21]))
         # gps_longitude_points.append(float(last_packet[22]))
@@ -116,10 +115,13 @@ def collect_graph_data():
 
     # Collect data from the latest packet for each field in the graphs_data dictionary
     for key in graphs_data:
+        # Get the length of the array of values graphed
         y_values = graphs_data[key][1]
+        # Shift 7 of the 8 values to the left to keep the graphs at 8 values
         for i in range(len(y_values) - 1):
             y_values[i] = y_values[i + 1]
 
+        # For each graph, attempt to graph the value from the current packet. If there is an issue use the previous value.
         if key == "Altitude":
             try:
                 y_values[-1] = float(curr_packet[5])
@@ -286,14 +288,11 @@ def plot_3d_graphs(fig_3d_func, axs_3d_func):
 
     axs_3d_func.clear() # Clear out the plot for new data
     axs_3d_func.set_title('GPS Position') # Plot title
-    axs_3d_func.set_xlabel('GPS Latitude') # Rename the axis, mostly sure they are on the correct axis will need to check at some point
+    axs_3d_func.set_xlabel('GPS Latitude') # Rename the axis, mostly sure they are on the correct axis will need to check at some point (they are)
     axs_3d_func.set_ylabel('GPS Longitude')
     axs_3d_func.set_zlabel('GPS Altitude')
     axs_3d_func.plot(gps_latitude_points, gps_longitude_points, gps_altitude_points, color=GATOR_BLUE)
     fig_3d_func.patch.set_facecolor(PRIMARY_COLOR)
-    # fig_3d.patch.set_color(PRIMARY_COLOR)
-    # fig_3d.patch.set_edgecolor(PRIMARY_COLOR)
-    # fig_3d.set_edgecolor(PRIMARY_COLOR)
     canvas_3d.draw()
 
 # Function to update the mission time dynamically
@@ -305,9 +304,7 @@ def update_mission_time():
         current_time = "Mission Time: " + str(curr_packet[1]) # First attempt to get the latest GPS time
     except:
         current_time = "Mission Time: " + str(last_packet[1]) # Just in case the csv was mid write when the line was accessed
-    # print("Current Mission Time : ", current_time)
     mission_time_label.config(text=current_time)
-    # root.after(50, update_mission_time)  # Update every 50 milliseconds
 
 # Function to refresh all displayed variables with new data every second (1 Hz)
 def update_everything():
@@ -321,12 +318,6 @@ def update_everything():
     gps_time_label.config(text=current_time)
 
     # Update variables along the top of the UI
-
-    # There are 25 values sent in the telemetry packets, but the generated csv creates a 0th column with the
-    # number representing the current row, this causes the telemetry data to be effectively 1 indexed. I don't
-    # think this should be changed when the XBEE is implemented because it represents how many packets we have
-    # received not how many packets have been sent as is represented in the telemetry packet - Joel
-
 
     try:
         packet_count_label.config(text=f"Packet Count: {telemetry_handler.packet_count}")
@@ -345,17 +336,9 @@ def update_everything():
         sim_enable_label.config(text=f"Sim Enable: {telemetry_handler.sim_enable}")
         sim_active_label.config(text=f"Sim Active: {telemetry_handler.sim_activate}")
 
-
-    # if telemetry_handler.sim_enable and not telemetry_handler.sim_activate:
-    #     simulation_label.config(text="Simulation Mode: ENABLED")
-    # elif telemetry_handler.sim_activate:
-    #     simulation_label.config(text="Simulation Mode: ACTIVE")
-    # else:
-    #     simulation_label.config(text="Simulation Mode: OFF")
-
     if not updating_graphs: # Skips if an update is already in progress
         updating_graphs = True
-        collect_graph_data()  # Generate new random dataf
+        collect_graph_data()  # Gather the data from the .csv
         plot_all_graphs(fig, axs)  # Update the existing figure and axes
         plot_3d_graphs(fig_3d, axs_3d) # Update the 3D figure and axes
         updating_graphs = False
@@ -372,13 +355,16 @@ def send_command():
         root.destroy()
         quit()
         # This is because I can't be bothered to look for a nice way to close the window after forced fullscreen - Joel
+        # Didn't work anyways, but I'll leave it for kicks
         
-    elif command != "":
+    elif command != "": # If the user presses send with an empty string nothing will happen so there isn't really a need to handle it.
         try:
             telemetry_handler.send_command(command)
         except Exception as e:
             print(f"ERROR [SEND COMMAND] : Error sending command {e}")
 
+    # Labels to track where in the simulation activation sequence the Can is in.
+    # These labels are based on the CMD ECHO of the received packets to ensure that the Can received the commands.
     if telemetry_handler.sim_enable:
         if telemetry_handler.sim_activate:
             simulation_active = True
@@ -387,6 +373,7 @@ def send_command():
     else:
         simulation_active = False
 
+    # Index 24 is the CMD ECHO field
     try:
         previous_command = curr_packet[24]
     except:
@@ -396,12 +383,6 @@ def send_command():
 
 # Gather the latest packet of data using the csv as a middle man
 def get_last_csv_row(filename):
-
-    # There are 25 values sent in the telemetry packets, but the generated csv creates a 0th column with the
-    # number representing the current row, this causes the telemetry data to be effectively 1 indexed. I don't
-    # think this should be changed when the XBEE is implemented because it represents how many packets we have
-    # received not how many packets have been sent as is represented in the telemetry packet - Joel
-
     global curr_packet, last_packet, packet_counter, generate_new_packet
     if curr_packet != '' and curr_packet != None:
         last_packet = curr_packet
@@ -447,7 +428,6 @@ fig.patch.set_facecolor(PRIMARY_COLOR)  # Light gray background
 canvas = FigureCanvasTkAgg(fig, master=root)
 
 # Create 3D graph
-
 font = {'family': 'Verdana',
         'color':  GATOR_BLUE,
         'weight': 'normal',
@@ -464,15 +444,11 @@ axs_3d.set_facecolor(PRIMARY_COLOR)
 
 axs_3d.plot(gps_latitude_points, gps_longitude_points, gps_altitude_points) # X Y Z
 fig_3d.patch.set_facecolor(PRIMARY_COLOR) # Light gray background
-# fig_3d.patch.set_color(PRIMARY_COLOR)
-# fig_3d.patch.set_edgecolor(PRIMARY_COLOR)
-# fig_3d.set_edgecolor(PRIMARY_COLOR)
 canvas_3d = FigureCanvasTkAgg(fig_3d, master=root)
 
 # Ensure the figure canvas stretches dynamically
 canvas.get_tk_widget().grid(row=3, column=0, columnspan=4, sticky="nsew")
 canvas_3d.get_tk_widget().grid(row=3, column=6, sticky='nsew')
-# fig_3d.grid----------------------------------------------------------------------------------------------------
 
 # Set the main window to resize dynamically
 root.grid_columnconfigure(0, weight=1)
@@ -509,10 +485,6 @@ cmd_entry.grid(row=0, column=2, padx=10)
 
 send_button = tk.Button(cmd_frame, text="Send", font=FONT_TITLE, command=send_command)
 send_button.grid(row=0, column=3, padx=0, sticky="w")
-
-# # Create label to display Simulation state
-# simulation_label = tk.Label(root, text="Simulation Mode: OFF", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR)
-# simulation_label.grid(row=0, column=4, sticky="ew", padx=5)
 
 # Create mission time label
 mission_time_label = tk.Label(root, text="--:--:--", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR)
@@ -566,7 +538,6 @@ try:
     telemetry_handler.start_telemetry()
 except Exception as e:
     print(e)
-    # quit()
 
 # Start updating graphs every second
 update_everything()

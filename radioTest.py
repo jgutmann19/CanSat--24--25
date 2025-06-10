@@ -72,8 +72,6 @@ else:
                 100, #                                        GPS_Longitude 23
                 100, #                                             GPS_Sats 24
                 "CXON"] #                                               CMD 25
-    
-
 
 xbee_device = XBeeDevice("COM4", 115200)
 receiver = RemoteXBeeDevice(x64bit_addr=XBee64BitAddress.from_hex_string("0013A20041E060DA"), local_xbee=xbee_device)
@@ -165,7 +163,6 @@ while num_sends < 1000:
     xbee_device.send_data_async(remote_xbee=receiver ,data=f"3174,{message[1]},{num_sends},{message[3]},{message[4]},{message[5]},{message[6]},{message[7]},{message[8]},{message[9]},{message[10]},{message[11]},{message[12]},{message[13]},{message[14]},{message[15]},{message[16]},{message[17]},{message[18]},{message[19]},{message[20]},{message[21]},{message[22]},{message[23]},{message[24]}")
 
     num_sends += 1
-    # print("Sent")
     time.sleep(1.5)
 
 xbee_device.close()

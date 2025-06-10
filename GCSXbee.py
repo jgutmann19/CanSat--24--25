@@ -4,6 +4,10 @@ import time
 from threading import Thread
 from datetime import datetime, timezone
 
+# This is because there is a funny issue where some package requires a yaml config.
+# I have no clue what causes this or how to fix it, sometimes it is needed and othertimes it doesn't.
+# When I was developing the code, my computer was the only one that seemed to be in the othertimes camp always.
+# Only God knows why this is.
 # os.environ["KUBECONFIG"] = os.path.abspath("kube_config.yaml")
 
 from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice, XBee64BitAddress
@@ -19,6 +23,7 @@ class TelemetryHandler:
             team_id (str): Four-digit team identification number.
             port (str): Serial port for communication.
             baudrate (int): Baud rate for XBee communication.
+            mac_addr (str): Mac Address of the XBee on the Can, part of the unicast prevention.
         """
 
         ##################### File path for the simulated data to be used #####################
@@ -63,6 +68,7 @@ class TelemetryHandler:
             self.xbee_device.open()
         except Exception as e:
             raise Exception(f"GCSXbee (File: GCSXbee.py Function: start_telemetry) [START TELEMETRY] Failed to open XBee device: {e}")
+            return # Prevents the .csv from being overwritten. Should have done this sooner.
         
         # Create CSV file with specified naming format
         self.csv_file = open(self.write_filepath, 'w', newline='')
@@ -99,12 +105,13 @@ class TelemetryHandler:
             command (str): Command string following competition format.
         """
 
+        # Because the FSW uses a buffer to help read the commands sent to it, if the buffer is not filled right away it will wait until it is filled.
+        # This will cause some commands to need to be sent twice. Padding the strings here with null terms allows the commands to be sent once.
         if command == "CX ON":
             CXON = f"CMD,{self.team_id},CX,ON\0\0\0\0\0\0\0\0"
             try:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=CXON)
-                    # self.xbee_device.send_data_async(remote_xbee=self.receiver, data=CXON)
             except Exception as e:
                 print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND CXON]: Error sending command - {e}")
 
@@ -113,7 +120,6 @@ class TelemetryHandler:
             try:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver ,data=CXOFF)
-                    # self.xbee_device.send_data_async(remote_xbee=self.receiver ,data=CXOFF)
             except Exception as e:
                 print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND CXOFF]: Error sending command - {e}")
         
@@ -122,7 +128,6 @@ class TelemetryHandler:
             try:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=ENABLE)
-                    # self.xbee_device.send_data_async(remote_xbee=self.receiver, data=ENABLE)
             except Exception as e:
                 print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND SIM ENABLE]: Error sending command - {e}")
 
@@ -131,7 +136,6 @@ class TelemetryHandler:
             try:
                 if self.xbee_device.is_open() and self.sim_enable:
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=ACTIVATE)
-                    # self.xbee_device.send_data_async(remote_xbee=self.receiver, data=ACTIVATE)
             except Exception as e:
                 print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND SIM ACTIVATE]: Error sending command - {e}")
         
@@ -140,10 +144,6 @@ class TelemetryHandler:
             try:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=DISABLE)
-                    print()
-                    print("Command SIM DISABLE sent")
-                    print()
-                    # self.xbee_device.send_data_async(remote_xbee=self.receiver, data=DISABLE)
             except Exception as e:
                 print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND SIM DISABLE]: Error sending command - {e}")
 
@@ -153,7 +153,6 @@ class TelemetryHandler:
             try:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=CAL)
-                    self.xbee_device.send_data_async(remote_xbee=self.receiver, data=CAL)
             except Exception as e:
                 print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND CAL]: Error sending command - {e}")
 
@@ -162,13 +161,12 @@ class TelemetryHandler:
             try:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=ST_GPS)
-                    # self.xbee_device.send_data_async(remote_xbee=self.receiver, data=ST_GPS)
             except Exception as e:
                 print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND ST GPS]: Error sending command - {e}")
 
         elif command[0:2] == "ST":
             current_time = "00:00:00"
-            try:
+            try: # This is just a bunch of handling I did in case the user gives an incomplete cmd, probably not necessary but is nice to have.
                 current_time = command[3:]
                 if current_time == "":
                     current_time = datetime.now(timezone.utc).strftime('%H:%M:%S')
@@ -189,7 +187,6 @@ class TelemetryHandler:
             try:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=ST)
-                    # self.xbee_device.send_data_async(remote_xbee=self.receiver, data=ST)
             except Exception as e:
                 print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND ST]: Error sending command - {e}")
 
@@ -198,7 +195,6 @@ class TelemetryHandler:
             try:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=MEC_WIRE)
-                    # self.xbee_device.send_data_async(remote_xbee=self.receiver, data=MEC_WIRE)
             except Exception as e:
                 print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND MEC WIRE ON]: Error sending command - {e}")
 
@@ -207,11 +203,10 @@ class TelemetryHandler:
             try:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=MEC_WIRE)
-                    # self.xbee_device.send_data_async(remote_xbee=self.receiver, data=MEC_WIRE)
             except Exception as e:
                 print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND MEC WIRE OFF]: Error sending command - {e}")
 
-        # FIXME : Add any MEC commands here -------------------------------------------------------------------------------
+        # FIXME : Add any other MEC commands here -------------------------------------------------------------------------------
 
         else:
             print(f"ERROR (File: GCSXbee.py Function: send_command) [SEND_COMMAND]: Unknown command - {command}")
@@ -220,32 +215,20 @@ class TelemetryHandler:
         """Internal method to receive and process telemetry data."""
         while self.is_receiving:
             try:
-                xbee_message = self.xbee_device.read_data(20)
+                xbee_message = self.xbee_device.read_data(20) # The 20 is a timeout parameter
                 if xbee_message:
-
-
-                    # TODO: THIS IS A TEMPORARY PACKET FOR THE SAKE OF READING THE SENT "COMMAND"
-                    # line = xbee_message.data.decode('utf-8').strip()
-                    # print(line)
-                    # xbee_message = self.xbee_device.read_data(20)
-
-
-
                     # Read and decode the message
                     line = xbee_message.data.decode('utf-8').strip()
                     xbee_message = self.xbee_device.read_data(20)  # Read the next message
                     if xbee_message is None:
-                        # print(line)   
                         continue
                     line = line + xbee_message.data.decode('utf-8').strip()  # Append the next message data
                     data = line.split(',')
-                    # print(line)
-                    # print("GPS Time: ", data[19])
 
+                    # Because we could not get the GPS to work, we have to fake all of the GPS data.
+                    # This includes GPS time, but it is easier to do that here in the GCS. Whoopsies.
                     current_time = datetime.now(timezone.utc).strftime('%H:%M:%S')
                     data[19] = current_time
-                    # print("GPS Time: ", data[19])
-                    # print()
 
                     # Validate team ID and basic data format
                     if (len(data) >= len(self.telemetry_fields)) and (data[0] == self.team_id):
@@ -261,8 +244,7 @@ class TelemetryHandler:
                         self.sim_enable = True
 
                     elif data[24] == "SIMACT":
-                        self.sim_activate = True
-                        # if not self.simulation_thread.is_alive():  
+                        self.sim_activate = True 
                         self.start_sim()                     
 
                     elif data[24] == "SIMDIS":
@@ -273,40 +255,8 @@ class TelemetryHandler:
 
             except Exception as e:
                 print(f"ERROR (File: GCSXbee.py Function: _receive_telemetry) [RECEIVE TELEMETRY] : {e}")
-                
-
-    # def _receive_telemetry_serial(self):
-    #     """Internal method to receive and process telemetry data over serial."""
-    #     while self.is_receiving:
-    #         try:
-    #             xbee_message = self.xbee_device.read_data(20)
-    #             if xbee_message:
-    #                 # Read and decode the message
-    #                 line = xbee_message.data.decode('utf-8').strip()
-    #                 print(f"Received data: {line}")
-    #                 data = line.split(',')
-
-    #                 # Validate team ID and basic data format
-    #                 if (len(data) >= len(self.telemetry_fields)) and (data[0] == self.team_id):
-    #                     # Write to CSV file
-    #                     self.csv_writer.writerow(data)
-    #                     self.csv_file.flush()  # Ensure data is written to disk
-
-    #                     # Update packet count
-    #                     self.packet_count += 1
-
-    #         except Exception as e:
-    #             print(f"ERROR (File: GCSXbee.py Function: _receive_telemetry_serial) [RECEIVE TELEMETRY SERIAL] : {e}")
 
     def start_sim(self):
-        """
-        Send simulated pressure data (simulation mode only).
-
-        Args:
-            pressure (int): Pressure in pascals.
-        """
-        # self.send_command(f"CMD,{self.team_id},SIMP,{pressure}")
-
         if (self.sim_enable and self.sim_activate):
             print(self.SIM_CSV_PATH)
             self.simulation_thread = Thread(target=self._send_command_pressure)
