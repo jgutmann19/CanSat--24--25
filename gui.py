@@ -31,13 +31,20 @@ global curr_packet
 global last_packet
 global generate_new_packet
 global simulation_active
-write_path = "Flight_3174.csv" # This is the path to the CSV file where the telemetry data is written
+global packet_count
+global csv_rows
+write_path = "Flight_3174 - Submission - Copy.csv" # This is the path to the CSV file where the telemetry data is written
                                   # It's just as important as the MAC address for the XBee but only the 'E' (or drive letter) needs to be changed
 previous_command = ""
 curr_packet = [0 for _ in range(26)]
 last_packet = [0 for _ in range(26)]
 generate_new_packet = True
 simulation_active = False
+packet_count = 1
+
+with open(write_path) as csv_file:
+    csv_reader = csv.reader(csv_file)
+    csv_rows = [r for r in csv_reader]
 
 # Default values and colors for different aspects of the graphs
 plt.rcParams.update({'font.size': 14})        # Set default font size for plots
@@ -308,9 +315,13 @@ def update_mission_time():
 
 # Function to refresh all displayed variables with new data every second (1 Hz)
 def update_everything():
-    global updating_graphs, curr_packet, packet_counter, previous_command
+    global updating_graphs, curr_packet, packet_counter, previous_command, packet_count, csv_rows
 
-    get_last_csv_row(write_path) # Get the last row in the csv
+    if packet_count < len(csv_rows):
+        curr_packet = csv_rows[packet_count]
+        print(curr_packet)
+
+    # get_last_csv_row(write_path) # Get the last row in the csv
     try:
         current_time = "GPS Time: " + str(curr_packet[19]) # First attempt to get the latest GPS time
     except:
@@ -318,6 +329,14 @@ def update_everything():
     gps_time_label.config(text=current_time)
 
     # Update variables along the top of the UI
+
+    if (curr_packet[24] == "SIMENABLE"):
+        telemetry_handler.sim_enable = True
+    elif (curr_packet[24] == "SIMACT" and telemetry_handler.sim_enable == True):
+        telemetry_handler.sim_activate = True
+    elif (curr_packet[24] == "SIMDIS"):
+        telemetry_handler.sim_activate = False
+        telemetry_handler.sim_enable = False
 
     try:
         packet_count_label.config(text=f"Packet Count: {telemetry_handler.packet_count}")
@@ -342,44 +361,46 @@ def update_everything():
         plot_all_graphs(fig, axs)  # Update the existing figure and axes
         plot_3d_graphs(fig_3d, axs_3d) # Update the 3D figure and axes
         updating_graphs = False
+
+    packet_count += 1
     
     root.after(50, update_everything) # Because the packets come in at 1Hz, update the graphs ASAP after the new packet is received
 
 # Function to send command
-def send_command():
-    command = cmd_entry.get()
-    global previous_command, simulation_active
+# def send_command():
+#     command = cmd_entry.get()
+#     global previous_command, simulation_active
 
-    if command in ["EXIT", "exit"]:
-        telemetry_handler.stop_telemetry()
-        root.destroy()
-        quit()
-        # This is because I can't be bothered to look for a nice way to close the window after forced fullscreen - Joel
-        # Didn't work anyways, but I'll leave it for kicks
+#     if command in ["EXIT", "exit"]:
+#         telemetry_handler.stop_telemetry()
+#         root.destroy()
+#         quit()
+#         # This is because I can't be bothered to look for a nice way to close the window after forced fullscreen - Joel
+#         # Didn't work anyways, but I'll leave it for kicks
         
-    elif command != "": # If the user presses send with an empty string nothing will happen so there isn't really a need to handle it.
-        try:
-            telemetry_handler.send_command(command)
-        except Exception as e:
-            print(f"ERROR [SEND COMMAND] : Error sending command {e}")
+#     elif command != "": # If the user presses send with an empty string nothing will happen so there isn't really a need to handle it.
+#         try:
+#             telemetry_handler.send_command(command)
+#         except Exception as e:
+#             print(f"ERROR [SEND COMMAND] : Error sending command {e}")
 
-    # Labels to track where in the simulation activation sequence the Can is in.
-    # These labels are based on the CMD ECHO of the received packets to ensure that the Can received the commands.
-    if telemetry_handler.sim_enable:
-        if telemetry_handler.sim_activate:
-            simulation_active = True
-        else:
-            simulation_active = False
-    else:
-        simulation_active = False
+#     # Labels to track where in the simulation activation sequence the Can is in.
+#     # These labels are based on the CMD ECHO of the received packets to ensure that the Can received the commands.
+#     if telemetry_handler.sim_enable:
+#         if telemetry_handler.sim_activate:
+#             simulation_active = True
+#         else:
+#             simulation_active = False
+#     else:
+#         simulation_active = False
 
-    # Index 24 is the CMD ECHO field
-    try:
-        previous_command = curr_packet[24]
-    except:
-        previous_command = ""
+#     # Index 24 is the CMD ECHO field
+#     try:
+#         previous_command = curr_packet[24]
+#     except:
+#         previous_command = ""
 
-    cmd_entry.delete(0, tk.END)  # Clear the command entry field
+#     cmd_entry.delete(0, tk.END)  # Clear the command entry field
 
 # Gather the latest packet of data using the csv as a middle man
 def get_last_csv_row(filename):
@@ -483,8 +504,8 @@ cmd_label.grid(row=0, column=1, padx=(0, 5))
 cmd_entry = tk.Entry(cmd_frame, font=FONT_TITLE, width=20)
 cmd_entry.grid(row=0, column=2, padx=10)
 
-send_button = tk.Button(cmd_frame, text="Send", font=FONT_TITLE, command=send_command)
-send_button.grid(row=0, column=3, padx=0, sticky="w")
+# send_button = tk.Button(cmd_frame, text="Send", font=FONT_TITLE, command=send_command)
+# send_button.grid(row=0, column=3, padx=0, sticky="w")
 
 # Create mission time label
 mission_time_label = tk.Label(root, text="--:--:--", font=FONT_TITLE, bg=PRIMARY_COLOR, fg=TEXT_COLOR)
@@ -535,7 +556,7 @@ ssdc_image_label.grid(row=1, column=6, columnspan=1, padx=5, pady=5)
 telemetry_handler = None
 try:
     telemetry_handler = GCSXbee.TelemetryHandler("3174", port=COMM_PORT, baudrate=921600,write_path=write_path, mac_addr=MAC_ADDRESS)
-    telemetry_handler.start_telemetry()
+    # telemetry_handler.start_telemetry()
 except Exception as e:
     print(e)
 
