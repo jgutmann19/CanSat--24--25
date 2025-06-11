@@ -33,7 +33,7 @@ global generate_new_packet
 global simulation_active
 global packet_count
 global csv_rows
-write_path = "Flight_3174 - Submission - Copy.csv" # This is the path to the CSV file where the telemetry data is written
+write_path = "Flight_3174 - Submission.csv" # This is the path to the CSV file where the telemetry data is written
                                   # It's just as important as the MAC address for the XBee but only the 'E' (or drive letter) needs to be changed
 previous_command = ""
 curr_packet = [0 for _ in range(26)]
