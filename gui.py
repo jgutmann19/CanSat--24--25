@@ -560,11 +560,13 @@ try:
 except Exception as e:
     print(e)
 
+start = input("Press any key to start file play back.")
 # Start updating graphs every second
 update_everything()
 
 # Start the real-time mission time update
 update_mission_time()
+
 
 # Start the Tkinter event loop
 root.mainloop()
