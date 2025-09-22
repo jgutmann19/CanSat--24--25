@@ -317,9 +317,13 @@ def update_mission_time():
 def update_everything():
     global updating_graphs, curr_packet, packet_counter, previous_command, packet_count, csv_rows
 
-    if packet_count < len(csv_rows):
-        curr_packet = csv_rows[packet_count]
-        print(curr_packet)
+    # if packet_count < len(csv_rows):
+    #     curr_packet = csv_rows[packet_count]
+    #     print(curr_packet)
+    # else:
+    #     packet_count = 0
+
+    curr_packet = csv_rows[packet_count % len(csv_rows)]
 
     # get_last_csv_row(write_path) # Get the last row in the csv
     try:
@@ -339,7 +343,7 @@ def update_everything():
         telemetry_handler.sim_enable = False
 
     try:
-        packet_count_label.config(text=f"Packet Count: {telemetry_handler.packet_count}")
+        packet_count_label.config(text=f"Packet Count: {curr_packet[2]}")
         team_id_label.config(text=f"Team ID: {curr_packet[0]}")
         mode_label.config(text=f"Mode: {curr_packet[3]}")
         state_label.config(text=f"State: {curr_packet[4]}")
