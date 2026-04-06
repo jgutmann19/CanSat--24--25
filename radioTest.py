@@ -73,7 +73,7 @@ else:
                 100, #                                             GPS_Sats 24
                 "CXON"] #                                               CMD 25
 
-xbee_device = XBeeDevice("COM4", 115200)
+xbee_device = XBeeDevice("COM6", 921600)
 receiver = RemoteXBeeDevice(x64bit_addr=XBee64BitAddress.from_hex_string("0013A20041E060DA"), local_xbee=xbee_device)
 try:
     xbee_device.open()

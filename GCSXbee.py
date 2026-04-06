@@ -112,6 +112,8 @@ class TelemetryHandler:
             try:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=CXON)
+                    print("CXON command sent.")
+                    print(CXON)
             except Exception as e:
                 print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND CXON]: Error sending command - {e}")
 
@@ -120,6 +122,7 @@ class TelemetryHandler:
             try:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver ,data=CXOFF)
+                    print(CXOFF)
             except Exception as e:
                 print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND CXOFF]: Error sending command - {e}")
         
@@ -161,6 +164,7 @@ class TelemetryHandler:
             try:
                 if self.xbee_device.is_open():
                     self.xbee_device.send_data_async(remote_xbee=self.receiver, data=ST_GPS)
+                    print(ST_GPS)
             except Exception as e:
                 print(f"ERROR (File: GCSXbee.py Function: send_command) [COMMAND ST GPS]: Error sending command - {e}")
 
@@ -208,6 +212,28 @@ class TelemetryHandler:
 
         # FIXME : Add any other MEC commands here -------------------------------------------------------------------------------
 
+
+        elif command == "FLUSH":
+            self.xbee_device.flush_queues()
+
+        elif command == "COLD":
+            COLD_START = f"CMD,{self.team_id},COLD"
+            try:
+                if self.xbee_device.is_open():
+                    self.xbee_device.send_data_async(remote_xbee=self.receiver, data=COLD_START)
+                    print(COLD_START)
+            except Exception as e:
+                print(f"ERROR (File: GCSXbee.py Function: send_command) [COLD START]: Error sending command - {e}")
+
+        elif command == "WARM":
+            WARM_START = f"CMD,{self.team_id},WARM"
+            try:
+                if self.xbee_device.is_open():
+                    self.xbee_device.send_data_async(remote_xbee=self.receiver, data=WARM_START)
+                    print(WARM_START)
+            except Exception as e:
+                print(f"ERROR (File: GCSXbee.py Function: send_command) [WARM START]: Error sending command - {e}")
+
         else:
             print(f"ERROR (File: GCSXbee.py Function: send_command) [SEND_COMMAND]: Unknown command - {command}")
 
@@ -223,12 +249,15 @@ class TelemetryHandler:
                     if xbee_message is None:
                         continue
                     line = line + xbee_message.data.decode('utf-8').strip()  # Append the next message data
+                    
+                    print("Packet received : ", line)
+                    
                     data = line.split(',')
 
                     # Because we could not get the GPS to work, we have to fake all of the GPS data.
                     # This includes GPS time, but it is easier to do that here in the GCS. Whoopsies.
-                    current_time = datetime.now(timezone.utc).strftime('%H:%M:%S')
-                    data[19] = current_time
+                    # current_time = datetime.now(timezone.utc).strftime('%H:%M:%S')
+                    # data[19] = current_time
 
                     # Validate team ID and basic data format
                     if (len(data) >= len(self.telemetry_fields)) and (data[0] == self.team_id):
@@ -252,6 +281,9 @@ class TelemetryHandler:
                         self.sim_enable = False
                         if self.simulation_thread:
                             self.stop_sim()
+
+                    elif data[24] == "CXOFF":
+                        self.xbee_device.flush_queues()
 
             except Exception as e:
                 print(f"ERROR (File: GCSXbee.py Function: _receive_telemetry) [RECEIVE TELEMETRY] : {e}")

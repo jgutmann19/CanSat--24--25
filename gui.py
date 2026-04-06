@@ -14,7 +14,9 @@ global MAC_ADDRESS
 MAC_ADDRESS = "0013A2004210DA71"  # This is the MAC address of the FSW radio (the one on the CanSat)
 
 global COMM_PORT
-COMM_PORT = "COM4"  # Not all radios and devices use the same port, so this is set to a default value. Change as needed.
+COMM_PORT = "COM8"  # Not all radios and devices use the same port, so this is set to a default value. Change as needed.
+global BUAD
+BAUD = 921600
 ######################################################################
 
 # Colors and Fonts for Blue and Orange Theme
@@ -534,7 +536,7 @@ ssdc_image_label.grid(row=1, column=6, columnspan=1, padx=5, pady=5)
 # Create a telemetry handler object
 telemetry_handler = None
 try:
-    telemetry_handler = GCSXbee.TelemetryHandler("3174", port=COMM_PORT, baudrate=921600,write_path=write_path, mac_addr=MAC_ADDRESS)
+    telemetry_handler = GCSXbee.TelemetryHandler("3174", port=COMM_PORT, baudrate=BAUD,write_path=write_path, mac_addr=MAC_ADDRESS)
     telemetry_handler.start_telemetry()
 except Exception as e:
     print(e)
